@@ -23,7 +23,7 @@
   function colToNum(s) { let n = 0; for (const ch of s) n = n * 26 + (ch.charCodeAt(0) - 64); return n; }
 
   class Sheet {
-    constructor(ss, name, id) { this.ss = ss; this.name = name; this.id = id; this.data = []; this.formulas = {}; this.maxCols = 26; this.maxRows = 1000; }
+    constructor(ss, name, id) { this.ss = ss; this.name = name; this.id = id; this.data = []; this.formulas = {}; this.maxCols = 26; this.maxRows = 1000; this.images = []; }
     getName() { return this.name; }
     getSheetId() { return this.id; }
     getLastRow() {
@@ -62,9 +62,19 @@
     deleteRow(r) { return this.deleteRows(r, 1); }
     appendRow(vals) { this.getRange(this.getLastRow() + 1, 1, 1, vals.length).setValues([vals]); return this; }
     clear() { this.data = []; this.formulas = {}; return this; }
+    getImages() { return this.images.slice(); }
+    insertImage(_blob, col, row) {
+      const sh = this;
+      const img = { col, row, script: '', w: 0, h: 0,
+        assignScript(f) { this.script = f; return this; }, getScript() { return this.script; },
+        setWidth(w) { this.w = w; return this; }, setHeight(h) { this.h = h; return this; }, setAltTextTitle() { return this; },
+        remove() { sh.images.splice(sh.images.indexOf(img), 1); } };
+      this.images.push(img);
+      return img;
+    }
   }
   // các method định dạng của Sheet -> no-op chain
-  ['setFrozenRows', 'setColumnWidth', 'setColumnWidths', 'hideColumns', 'setTabColor', 'autoResizeColumns'].forEach((k) => {
+  ['setFrozenRows', 'setColumnWidth', 'setColumnWidths', 'setRowHeight', 'hideColumns', 'setTabColor', 'autoResizeColumns'].forEach((k) => {
     Sheet.prototype[k] = function () { return this; };
   });
 
@@ -99,9 +109,15 @@
     offset(dr, dc, nr, nc) { return new Range(this.sh, this.r + dr, this.c + dc, nr || this.nr, nc || this.nc); }
     clear() { for (let i = 0; i < this.nr; i++) for (let j = 0; j < this.nc; j++) { this.sh.set(this.r + i, this.c + j, ''); delete this.sh.formulas[`${this.r + i},${this.c + j}`]; } return this; }
     clearContent() { return this.clear(); }
+    getSheet() { return this.sh; }
+    getA1Notation() {
+      const L = (n) => { let s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; };
+      const a = L(this.c) + this.r;
+      return this.nr === 1 && this.nc === 1 ? a : a + ':' + L(this.c + this.nc - 1) + (this.r + this.nr - 1);
+    }
   }
   ['setNumberFormat', 'setFontWeight', 'setBackground', 'setWrap', 'setVerticalAlignment', 'setFontSize', 'setFontColor',
-    'setDataValidation', 'clearDataValidations', 'insertCheckboxes', 'setHorizontalAlignment', 'setBorder'].forEach((k) => {
+    'setDataValidation', 'clearDataValidations', 'merge', 'setFontStyle', 'setFontFamily', 'activate', 'insertCheckboxes', 'setHorizontalAlignment', 'setBorder'].forEach((k) => {
     Range.prototype[k] = function () { return this; };
   });
 
@@ -122,6 +138,7 @@
       const s = this.getActiveSheet(); this.sheets.splice(this.sheets.indexOf(s), 1); this.sheets.splice(i - 1, 0, s);
     }
     setSpreadsheetTimeZone() {}
+    toast() {}
   }
 
   function pad(n, w) { return String(n).padStart(w, '0'); }
@@ -169,7 +186,7 @@
         flush: () => {},
         newDataValidation: () => chain('DataValidation'),
       },
-      Utilities: { formatDate, getUuid: uuid },
+      Utilities: { formatDate, getUuid: uuid, base64Decode: (s) => s, newBlob: (b) => ({ bytes: b }) },
       Session: {
         getScriptTimeZone: () => 'Asia/Ho_Chi_Minh',
         getActiveUser: () => ({ getEmail: () => opts.email || 'demo@local' }),

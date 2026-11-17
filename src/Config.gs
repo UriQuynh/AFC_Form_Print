@@ -197,4 +197,5 @@ var DEFAULT_CONFIG = [
   ['MIN_ROWS', '20', 'Số dòng tối thiểu trên phiếu xuất kho A4 (mẫu gốc 20)'],
   ['SO_PHIEU_RESET', 'THANG', 'Đánh số phiếu lại từ 1 mỗi THANG hoặc NAM'],
   ['LOGO_URL', '', 'Để trống = dùng logo có sẵn; hoặc dán link ảnh logo công khai'],
+  ['WEB_APP_URL', '', 'Link web app (.../exec) cho nút IN PHIẾU trên sheet PXK. Để trống = tự lấy'],
 ];

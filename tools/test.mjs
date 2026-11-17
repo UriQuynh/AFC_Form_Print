@@ -13,7 +13,7 @@ const { createFakeGas } = require(path.join(root, 'dev/fake-gas.js'));
 
 const gas = createFakeGas({ webAppUrl: 'https://script.google.com/macros/s/TEST/exec' });
 gas.install(globalThis);
-const files = ['Config.gs', 'Db.gs', 'Api.gs', 'Setup.gs', 'Code.gs'];
+const files = ['Config.gs', 'Db.gs', 'Api.gs', 'Setup.gs', 'Code.gs', 'Pxk.gs', 'PxkButtons.gs'];
 for (const f of files) (0, eval)(fs.readFileSync(path.join(root, 'src', f), 'utf8'));
 
 let passed = 0;
@@ -31,7 +31,7 @@ t('setupSheets tạo đủ sheet + danh mục mẫu', () => {
   setupSheets();
   const names = gas.spreadsheet.getSheets().map((s) => s.getName());
   for (const n of ['PhieuXuat', 'ChiTiet', 'BaoCao', 'DM_SanPham', 'DM_TaiXe', 'DM_Xe', 'CauHinh']) assert.ok(names.includes(n), n);
-  assert.equal(names[0], 'PhieuXuat');
+  assert.deepEqual(names.slice(0, 2), ['Nhập PXK', 'PhieuXuat']);
   const md = getMasterData();
   assert.equal(md.products.length, 3);
   assert.equal(md.products.find((p) => p.maSP === 'K130/430').donVi, 'PALLET');
@@ -170,6 +170,7 @@ t('huỷ phiếu: loại khỏi báo cáo, giải phóng số phiếu', () => {
   assert.equal(getReport('2026-11-01', '2026-11-30').total.soPhieu, 2);
   assert.throws(() => savePhieu({ ...c }), /đã huỷ/);
   // số 231/11 dùng lại được, mã cuộn của phiếu huỷ cũng không chặn
+  assert.equal(getNextSoPhieu('2026-11-20'), '231/11', 'gợi ý lại số của phiếu đã huỷ');
   const again = savePhieu({ so: '231/11', ngay: '2026-11-14', khach: 'KHÁCH MỚI', kho: 'M2', lines: [{ maSP: 'K76/450', kg: 600, maCuon: 'M2-141126-C2-015' }] });
   assert.equal(again.lines[0].maCuon, 'M2-141126-C2-015');
 });
@@ -193,6 +194,168 @@ t('đọc theo tên cột: đổi thứ tự cột trên sheet vẫn chạy', ()
   sh.data = sh.data.map((row) => { const r = row.slice(); const tmp = r[0]; r[0] = r[1]; r[1] = tmp; return r; });
   const md = getMasterData();
   assert.ok(md.products.some((p) => p.maSP === 'K76/450' && p.loaiGiay === 'GIẤY CARTON'));
+});
+
+// ===================== Sheet PXK =====================
+const pxk = () => gas.spreadsheet.getSheetByName(PXK.NAME);
+const setCell = (a1, v) => pxk().getRange(a1).setValue(v);
+const kgCol = () => pxkCol_('kg');
+
+t('PXK: tạo sheet, nút bấm gắn đúng hàm, điền sẵn phiếu mới', () => {
+  const sh = pxk();
+  assert.ok(sh, 'có sheet PXK');
+  assert.equal(gas.spreadsheet.getSheets()[0].getName(), 'Nhập PXK');
+  assert.deepEqual(sh.getImages().map((i) => i.getScript()).sort(), ['pxkLoad', 'pxkNew', 'pxkPrint']);
+  assert.match(sh.getRange(PXK.F.so).getValue(), /^\d+\/\d{2}$/);
+  assert.ok(sh.getRange(PXK.F.ngay).getValue() instanceof Date);
+  assert.match(sh.getRange(PXK.TOTALS.bi).getFormula(), /SUMPRODUCT/);
+  assert.equal(sh.getRange(PXK.HEADER_ROW, 1).getValue(), 'Mã SP *');
+});
+
+t('PXK: cài đặt lại không nhân đôi nút và giữ dữ liệu đang nhập', () => {
+  setCell(PXK.F.khach, 'KHÁCH ĐANG NHẬP');
+  setupSheets();
+  assert.equal(pxk().getImages().length, 3);
+  assert.equal(pxk().getRange(PXK.F.khach).getValue(), 'KHÁCH ĐANG NHẬP');
+});
+
+let pxkSaved;
+t('PXK: gõ kg dòng mới -> tự lấy Mã SP/Ca/Máy theo dòng trên (onEdit)', () => {
+  const sh = pxk();
+  pxkClear_(sh); pxkFillNew_(sh);
+  setCell(PXK.F.ngay, new Date(2026, 10, 20));
+  setCell(PXK.F.kho, 'M2');
+  setCell(PXK.F.khach, 'KHÁCH PXK');
+  setCell(PXK.F.xe, '51F-442.06');
+  pxkOnEdit_(sh, sh.getRange(PXK.F.xe));
+  assert.equal(sh.getRange(PXK.F.soHuuXe).getValue(), 'Công ty');
+  const r = PXK.FIRST;
+  sh.getRange(r, pxkCol_('maSP')).setValue('K76/450');
+  sh.getRange(r, pxkCol_('ca')).setValue('C3');
+  sh.getRange(r, pxkCol_('may')).setValue('M2');
+  sh.getRange(r, kgCol()).setValue(520);
+  // dán 2 dòng kg cùng lúc
+  sh.getRange(r + 1, kgCol(), 2, 1).setValues([[510], [505]]);
+  pxkOnEdit_(sh, sh.getRange(r + 1, kgCol(), 2, 1));
+  assert.equal(sh.getRange(r + 2, pxkCol_('maSP')).getValue(), 'K76/450');
+  assert.equal(sh.getRange(r + 2, pxkCol_('ca')).getValue(), 'C3');
+});
+
+t('PXK: tự điền chỉ ghi vào ô trống, không ghi đè ô đã có', () => {
+  const sh = pxk();
+  const r = PXK.FIRST + 20;
+  sh.getRange(r, pxkCol_('maSP')).setValue('K78/450');
+  sh.getRange(r, pxkCol_('ca')).setValue('C2');
+  sh.getRange(r, pxkCol_('may')).setValue('M1');
+  sh.getRange(r, kgCol()).setValue(690);
+  sh.getRange(r + 1, pxkCol_('ca')).setValue('C3'); // người dùng gõ sẵn ca khác
+  sh.getRange(r + 1, kgCol()).setValue(700);
+  pxkOnEdit_(sh, sh.getRange(r + 1, kgCol()));
+  assert.equal(sh.getRange(r + 1, pxkCol_('maSP')).getValue(), 'K78/450');
+  assert.equal(sh.getRange(r + 1, pxkCol_('may')).getValue(), 'M1');
+  assert.equal(sh.getRange(r + 1, pxkCol_('ca')).getValue(), 'C3');
+  sh.getRange(r, 1, 2, PXK.COLS.length).clearContent();
+});
+
+t('PXK: thiếu Ca SX báo lỗi rõ dòng', () => {
+  const sh = pxk();
+  const ca = sh.getRange(PXK.FIRST, pxkCol_('ca'));
+  ca.setValue('');
+  assert.throws(() => pxkSave_(), /Dòng 10: thiếu Ca SX/);
+  ca.setValue('C3');
+});
+
+t('PXK: IN PHIẾU lưu vào PhieuXuat/ChiTiet và ghi lại số phiếu, ID, mã cuộn', () => {
+  const sh = pxk();
+  const before = readTable_('ChiTiet').rows.length;
+  pxkSaved = pxkSave_();
+  assert.equal(pxkSaved.khach, 'KHÁCH PXK');
+  assert.equal(pxkSaved.lines.length, 3);
+  assert.equal(pxkSaved.tongKg, 520 + 510 + 505);
+  assert.equal(readTable_('ChiTiet').rows.length, before + 3);
+  assert.equal(sh.getRange(PXK.F.id).getValue(), pxkSaved.id);
+  assert.equal(sh.getRange(PXK.F.so).getValue(), pxkSaved.so);
+  assert.equal(sh.getRange(PXK.FIRST, pxkCol_('maCuon')).getValue(), 'M2-201126-C3-001');
+  assert.equal(sh.getRange(PXK.FIRST + 2, pxkCol_('maCuon')).getValue(), 'M2-201126-C3-003');
+  assert.match(sh.getRange(PXK.STATUS).getValue(), /^Đã lưu/);
+});
+
+t('PXK: sửa rồi bấm IN PHIẾU lần nữa -> cập nhật cùng phiếu, không tạo phiếu mới', () => {
+  const sh = pxk();
+  const nPhieu = listPhieu({}).length;
+  sh.getRange(PXK.FIRST + 3, kgCol()).setValue(499);
+  pxkOnEdit_(sh, sh.getRange(PXK.FIRST + 3, kgCol()));
+  assert.equal(sh.getRange(PXK.STATUS).getValue(), PXK.STATUS_DIRTY);
+  const again = pxkSave_();
+  assert.equal(again.id, pxkSaved.id);
+  assert.equal(again.lines.length, 4);
+  assert.equal(listPhieu({}).length, nPhieu);
+  assert.equal(sh.getRange(PXK.FIRST, pxkCol_('maCuon')).getValue(), 'M2-201126-C3-001');
+});
+
+t('PXK: phiếu mới xoá trắng; mở phiếu theo số nạp lại đủ dữ liệu', () => {
+  const sh = pxk();
+  pxkClear_(sh); pxkFillNew_(sh);
+  assert.equal(sh.getRange(PXK.F.id).getValue(), '');
+  assert.equal(sh.getRange(PXK.FIRST, kgCol()).getValue(), '');
+  const ph = pxkFindBySo_('225/11');
+  pxkFill_(sh, ph);
+  assert.equal(sh.getRange(PXK.F.khach).getValue(), 'STARFLEX');
+  assert.equal(sh.getRange(PXK.FIRST + 13, kgCol()).getValue(), 1180);
+  assert.equal(sh.getRange(PXK.FIRST, pxkCol_('soBanh')).getValue(), 12);
+  // in lại không đổi dữ liệu
+  const re = pxkSave_();
+  assert.equal(re.id, ph.id);
+  assert.equal(re.thucXuat, 15393);
+});
+
+t('PXK: KHÔNG đụng vào sheet "pxk" có sẵn của người dùng (trùng tên không phân biệt hoa/thường)', () => {
+  const g3 = createFakeGas();
+  const saved = { ...globalThis };
+  g3.install(globalThis);
+  try {
+    // fake: mô phỏng getSheetByName không phân biệt hoa/thường như Google Sheets
+    const ss = g3.spreadsheet;
+    const orig = ss.getSheetByName.bind(ss);
+    ss.getSheetByName = (n) => orig(n) || ss.sheets.find((x) => x.name.toLowerCase() === String(n).toLowerCase()) || null;
+    const mine = ss.insertSheet('pxk');
+    mine.getRange('A4').setValue('PHIẾU XUẤT KHO');
+    mine.getRange('A7').setValue('STT');
+    setupSheets();
+    assert.equal(mine.getRange('A4').getValue(), 'PHIẾU XUẤT KHO');
+    assert.equal(mine.getRange('A7').getValue(), 'STT');
+    assert.equal(mine.getImages().length, 0);
+    assert.ok(!pxkIsOurs_(mine));
+    assert.ok(pxkIsOurs_(ss.getSheetByName('Nhập PXK')), 'sheet nhập riêng được tạo');
+    // nếu ai đó đặt sheet của họ trùng tên sheet nhập -> vẫn không ghi đè
+    ss.deleteSheet(ss.getSheetByName('Nhập PXK'));
+    const clash = ss.insertSheet('nhập pxk');
+    clash.getRange('A1').setValue('CỦA NGƯỜI DÙNG');
+    setupSheets();
+    assert.equal(clash.getRange('A1').getValue(), 'CỦA NGƯỜI DÙNG');
+    assert.throws(() => pxkSave_(), /không phải sheet nhập liệu/);
+  } finally {
+    gas.install(globalThis);
+    Object.keys(g3.env).forEach((k) => { globalThis[k] = saved[k]; });
+  }
+});
+
+t('webAppUrl_: ưu tiên WEB_APP_URL trong CauHinh', () => {
+  const t0 = readTable_('CauHinh');
+  const row = t0.rows.find((r) => r.key === 'WEB_APP_URL');
+  updateRow_(t0, row._row, { value: 'https://script.google.com/macros/s/X/exec' });
+  assert.equal(webAppUrl_(), 'https://script.google.com/macros/s/X/exec');
+  updateRow_(t0, row._row, { value: '' });
+  // không điền tay -> dùng link /exec doGet đã ghi nhớ, không dùng link /dev
+  PropertiesService.getScriptProperties().setProperty('WEB_APP_URL_SEEN', '');
+  assert.equal(webAppUrl_(), 'https://script.google.com/macros/s/TEST/exec');
+  const realSvc = ScriptApp.getService;
+  ScriptApp.getService = () => ({ getUrl: () => 'https://script.google.com/macros/s/REAL/exec' });
+  rememberWebAppUrl_();
+  ScriptApp.getService = () => ({ getUrl: () => 'https://script.google.com/macros/s/DEV/dev' });
+  rememberWebAppUrl_();
+  assert.equal(webAppUrl_(), 'https://script.google.com/macros/s/REAL/exec');
+  ScriptApp.getService = realSvc;
 });
 
 t('localizeFormula_: đổi dấu ngăn cho bảng tính tiếng Việt, giữ nguyên chuỗi QUERY', () => {

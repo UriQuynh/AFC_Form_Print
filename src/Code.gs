@@ -12,6 +12,7 @@
 function doGet(e) {
   var params = (e && e.parameter) || {};
   var page = String(params.page || 'form').toLowerCase();
+  rememberWebAppUrl_();
   var file = { form: 'Index', print: 'Print', bienban: 'Print', tem: 'Tem' }[page] || 'Index';
   var tpl = HtmlService.createTemplateFromFile(file);
   tpl.boot = bootScript_(getBoot_(page, params));
@@ -47,7 +48,11 @@ function include(name) {
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('AFC Form')
-    .addItem('Mở form nhập liệu', 'menuOpenForm_')
+    .addItem('Nhập PXK: In phiếu (lưu + in)', 'pxkPrint')
+    .addItem('Nhập PXK: Phiếu mới', 'pxkNew')
+    .addItem('Nhập PXK: Mở phiếu theo số', 'pxkLoad')
+    .addSeparator()
+    .addItem('Mở form nhập liệu (web app)', 'menuOpenForm_')
     .addItem('In phiếu đang chọn (dòng ở sheet PhieuXuat)', 'menuPrintSelected_')
     .addSeparator()
     .addItem('Cài đặt / cập nhật cấu trúc sheet', 'setupSheets')

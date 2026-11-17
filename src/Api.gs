@@ -73,8 +73,34 @@ function currentUser_() {
   try { return Session.getActiveUser().getEmail() || ''; } catch (e) { return ''; }
 }
 
+/**
+ * Link web app (/exec). Thứ tự ưu tiên:
+ *  1. CauHinh.WEB_APP_URL (người dùng điền tay)
+ *  2. link /exec mà doGet ghi nhớ lần gần nhất web app được mở (đáng tin nhất)
+ *  3. ScriptApp.getService().getUrl() — khi gọi từ nút trên sheet có thể trả link /dev
+ *     hoặc link triển khai khác, nên chỉ dùng khi không còn cách nào khác.
+ */
 function webAppUrl_() {
+  var fixed = '';
+  try { fixed = str_(getConfig_().WEB_APP_URL); } catch (e) { fixed = ''; }
+  if (fixed) return fixed;
+  try {
+    var seen = PropertiesService.getScriptProperties().getProperty(WEB_APP_URL_PROP);
+    if (seen) return seen;
+  } catch (e) { /* ignore */ }
   try { return ScriptApp.getService().getUrl() || ''; } catch (e) { return ''; }
+}
+
+var WEB_APP_URL_PROP = 'WEB_APP_URL_SEEN';
+
+/** Gọi trong doGet: ghi nhớ link /exec thật của web app. */
+function rememberWebAppUrl_() {
+  try {
+    var url = ScriptApp.getService().getUrl() || '';
+    if (!/\/exec$/.test(url)) return;
+    var props = PropertiesService.getScriptProperties();
+    if (props.getProperty(WEB_APP_URL_PROP) !== url) props.setProperty(WEB_APP_URL_PROP, url);
+  } catch (e) { /* không có quyền ghi -> bỏ qua */ }
 }
 
 // ===================== Số phiếu & mã cuộn =====================
@@ -87,6 +113,7 @@ function getNextSoPhieu(ngayIso) {
   var y = d.getFullYear(), m = d.getMonth();
   var max = 0;
   readTable_('PhieuXuat').rows.forEach(function (r) {
+    if (str_(r.trangThai) === APP.STATUS_CANCEL) return; // số của phiếu huỷ được dùng lại
     var rd = r.ngay instanceof Date ? r.ngay : (r.ngay ? safeDate_(r.ngay) : null);
     if (!rd || rd.getFullYear() !== y || (!byYear && rd.getMonth() !== m)) return;
     var n = parseInt(String(r.so).split('/')[0], 10);

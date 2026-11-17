@@ -40,10 +40,10 @@ function setupSheetsLocked_() {
   PropertiesService.getScriptProperties().setProperty(SPREADSHEET_ID_PROP, ss.getId());
   try { ss.setSpreadsheetTimeZone(APP.TZ); } catch (e) { /* ignore */ }
 
-  var order = ['PhieuXuat', 'ChiTiet', 'BaoCao', 'DM_SanPham', 'DM_KhachHang', 'DM_TaiXe', 'DM_Xe', 'DM_Kho', 'DM_Ca', 'DM_NhanVien', 'CauHinh'];
+  var order = [PXK.NAME, 'PhieuXuat', 'ChiTiet', 'BaoCao', 'DM_SanPham', 'DM_KhachHang', 'DM_TaiXe', 'DM_Xe', 'DM_Kho', 'DM_Ca', 'DM_NhanVien', 'CauHinh'];
   var created = {};
   order.forEach(function (name) {
-    if (name === 'BaoCao') return;
+    if (name === 'BaoCao' || name === PXK.NAME) return;
     if (SCHEMA[name].kind === 'list') migrateActiveColumn_(ss, name);
     created[name] = ensureSheet_(ss, name);
   });
@@ -72,16 +72,18 @@ function setupSheetsLocked_() {
   applyFormats_(ss);
   applyValidations_(ss);
   buildReportSheet_(ss);
+  var pxkSheet = buildPxkSheet_(ss, formulaSeparator_(ss.getSheetByName('BaoCao')));
 
   // Sắp thứ tự tab
   order.forEach(function (name, i) {
+    if (name === PXK.NAME && !pxkSheet) return;
     var sh = ss.getSheetByName(name);
     if (sh) { ss.setActiveSheet(sh); ss.moveActiveSheet(i + 1); }
   });
-  ss.setActiveSheet(ss.getSheetByName('PhieuXuat'));
+  ss.setActiveSheet(pxkSheet || ss.getSheetByName('PhieuXuat'));
 
   try {
-    SpreadsheetApp.getUi().alert('Đã cài đặt xong cấu trúc sheet.\n\nMở form: menu "AFC Form" → "Mở form nhập liệu". (Nếu chưa có web app: Tiện ích mở rộng → Apps Script → Triển khai → Ứng dụng web.)');
+    SpreadsheetApp.getUi().alert('Đã cài đặt xong cấu trúc sheet.\n\nLập phiếu ngay trên sheet "Nhập PXK" (nút IN PHIẾU), hoặc mở web app: menu "AFC Form" → "Mở form nhập liệu".');
   } catch (e) { /* chạy từ editor: không có UI */ }
   return true;
 }

@@ -19,6 +19,7 @@ Chạy menu **AFC Form → Cài đặt / cập nhật cấu trúc sheet** sẽ t
 
 | Sheet | Vai trò | Ai sửa |
 |---|---|---|
+| `Nhập PXK` | Lập phiếu **ngay trên Google Sheet**: ô nhập có dropdown, nút **IN PHIẾU / + PHIẾU MỚI / MỞ PHIẾU THEO SỐ** (xem mục 4) | Nhân viên nhập |
 | `PhieuXuat` | 1 dòng = 1 phiếu xuất kho = 1 chuyến xe (số phiếu, ngày, khách, kho, xe, tài xế, tổng kg, trừ bì, thực xuất, trạng thái…) | Form ghi |
 | `ChiTiet` | 1 dòng = 1 cuộn / pallet (mã cuộn, mã SP, kg, số bánh, ca, máy, ngày SX, chỉ tiêu KCS…) | Form ghi |
 | `BaoCao` | Bảng QUERY tự cập nhật: sản lượng theo ngày, theo SP, theo khách, tài xế & lương. Sửa **Từ ngày / Đến ngày** ở ô B2:B3 | Tự động |
@@ -32,6 +33,7 @@ Chạy menu **AFC Form → Cài đặt / cập nhật cấu trúc sheet** sẽ t
 
 Ghi chú:
 
+- Code **không bao giờ ghi vào sheet không do nó tạo** (vd sheet mẫu `pxk` của bạn). Lưu ý: Google Sheets so tên sheet không phân biệt hoa/thường, nên đừng đặt tên sheet riêng của bạn là "Nhập PXK".
 - Webapp đọc theo **tên cột** ở dòng 1, nên có thể đổi thứ tự cột hoặc thêm cột phụ. Không đổi tên cột.
 - Cột **Ngừng dùng** (checkbox) ở danh mục: để trống = đang dùng; tick để ẩn khỏi dropdown nhưng vẫn giữ lịch sử. Dòng mới gõ trực tiếp trên sheet tự động là "đang dùng".
 - Công thức sheet `BaoCao` tự theo ngôn ngữ bảng tính (dấu `,` hoặc `;`), không cần sửa tay.
@@ -54,7 +56,7 @@ Ghi chú:
 
 1. Mở Google Sheet của A.F.C → **Tiện ích mở rộng → Apps Script**.
 2. Trong trình soạn thảo Apps Script, tạo các file đúng **tên** như thư mục [`src/`](src/) (bỏ phần đuôi):
-   - File **Script** (`.gs`): `Config`, `Db`, `Api`, `Setup`, `Code`
+   - File **Script** (`.gs`): `Config`, `Db`, `Api`, `Setup`, `Code`, `Pxk`, `PxkButtons`
    - File **HTML**: `Index`, `Print`, `Tem`, `css_App`, `css_Print`, `js_Common`, `js_Form`, `js_Print`, `js_Tem`, `lib_Qr`, `lib_Logo`
    - Dán nội dung tương ứng. Bật hiển thị `appsscript.json` (Cài đặt dự án → *Hiện tệp kê khai "appsscript.json"*) và dán nội dung [`src/appsscript.json`](src/appsscript.json).
 3. Chọn hàm `setupSheets` → **Chạy** → cấp quyền. Sheet được tạo đủ cấu trúc + danh mục mẫu.
@@ -64,6 +66,7 @@ Ghi chú:
    - *Người có quyền truy cập*: **Bất kỳ ai có Tài khoản Google**
    - Bấm Triển khai, copy **URL ứng dụng web** (`.../exec`).
 5. Tải lại Google Sheet → menu **AFC Form → Mở form nhập liệu**. Lưu URL vào bookmark / màn hình chính điện thoại.
+6. Mở link web app **một lần** (để nút IN PHIẾU trên sheet ghi nhớ đúng link `/exec`), hoặc dán link đó vào sheet `CauHinh`, khoá `WEB_APP_URL`.
 
 ### Cách B — Đẩy code bằng clasp (cho dev)
 
@@ -109,6 +112,18 @@ Lần đầu mỗi người mở form, Google hỏi cấp quyền — bấm cho 
 
 ## 4. Sử dụng hằng ngày
 
+### Cách 1 — Lập phiếu ngay trên Google Sheet (sheet `Nhập PXK`, máy tính)
+
+1. Bấm **+ PHIẾU MỚI** → số phiếu kế tiếp, ngày hôm nay, kho, người lập được điền sẵn.
+2. Điền các ô nền vàng (đều có dropdown; gõ tên mới vẫn được, khi lưu sẽ tự thêm vào danh mục). Chọn **Biển số xe** → tự điền Xe (Công ty/Thuê ngoài) và tài xế mặc định; chọn **Tài xế** → tự điền SĐT.
+3. Bảng hàng (dòng 10–69): mỗi dòng 1 cuộn/pallet. Dòng đầu chọn **Mã SP, Ca SX** (Máy để trống = kho xuất); các dòng sau chỉ cần gõ **kg** (và số bánh nếu là pallet) — Mã SP / Ca / Máy tự lấy theo dòng trên. Có thể dán cả cột kg từ Excel. Chỉ tiêu KCS nhập ở cột H→O (để trống thì tem in trống).
+4. Bấm **IN PHIẾU (lưu + in)** → phiếu được lưu vào `PhieuXuat` + `ChiTiet`, sheet ghi lại số phiếu, ID, mã cuộn, rồi mở trang in A4 (có link tem KCS/COA và biên bản giao nhận). Nếu trình duyệt chặn cửa sổ mới, bấm nút trong hộp thoại.
+5. Sửa phiếu đã lưu: **MỞ PHIẾU THEO SỐ** → sửa → **IN PHIẾU** lần nữa (cập nhật đúng phiếu đó, không tạo phiếu mới).
+
+Nút bấm chỉ chạy trên trình duyệt máy tính; cùng các lệnh có ở menu **AFC Form → Nhập PXK: …**. Trên điện thoại dùng web app (Cách 2).
+
+### Cách 2 — Web app (máy tính hoặc điện thoại)
+
 1. **Lập phiếu**: số phiếu tự gợi ý → chọn ngày, kho, khách, xe (tài xế tự điền theo xe), người lập.
 2. **Thêm mặt hàng**: chọn mã SP, ca, máy, ngày SX → dán số kg từng cuộn vào ô nhập nhanh
    (vd `544 540 557 552`, hoặc dán 1 cột từ Excel; pallet: `1154/12` hoặc 2 cột *kg ⇥ số bánh*) → **Thêm cuộn**.
@@ -129,6 +144,8 @@ src/                 # Mã nguồn Apps Script (đẩy lên bằng clasp, rootDi
   Api.gs             #   API cho webapp: danh mục, lưu/sửa/huỷ phiếu, số phiếu, mã cuộn, báo cáo
   Setup.gs           #   tạo sheet, dropdown, sheet BaoCao, dữ liệu mẫu
   Code.gs            #   doGet (định tuyến trang), menu trên Sheet
+  Pxk.gs             #   sheet "Nhập PXK": dựng sheet, nút IN PHIẾU / PHIẾU MỚI / MỞ PHIẾU, onEdit tự điền
+  PxkButtons.gs      #   ảnh nút bấm (sinh bằng tools/make-buttons.py)
   Index.html, js_Form.html, css_App.html      # form nhập liệu / danh sách / báo cáo
   Print.html, js_Print.html, css_Print.html   # phiếu xuất kho A4 + biên bản giao nhận
   Tem.html, js_Tem.html                       # tem KCS A5 + COA A5
@@ -136,6 +153,7 @@ src/                 # Mã nguồn Apps Script (đẩy lên bằng clasp, rootDi
 dev/fake-gas.js      # giả lập SpreadsheetApp/Utilities… để chạy src/*.gs ngoài Google
 dev/preview-runtime.js
 tools/test.mjs       # test logic server (Node)
+tools/make-buttons.py    # vẽ lại ảnh nút bấm cho sheet Nhập PXK
 tools/build-preview.mjs  # dựng bản xem trước offline vào preview/
 ```
 
