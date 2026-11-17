@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tem KCS &amp; COA · Giấy A.F.C</title>
+<?!= include('css_Print'); ?>
+</head>
+<body>
+<?!= boot ?>
+<div class="bar">
+  <b id="ttl">Tem cuộn A5</b><span class="sp"></span>
+  <select id="kind" aria-label="Loại tem">
+    <option value="both">Tem KCS + COA</option>
+    <option value="kcs">Chỉ tem KCS (BM-18)</option>
+    <option value="coa">Chỉ phiếu COA</option>
+  </select>
+  <select id="roll" aria-label="Chọn cuộn"></select>
+  <a class="btn" id="back" href="#">← Phiếu xuất kho</a>
+  <button type="button" class="pri" id="print">In A5</button>
+</div>
+<div class="note" id="note">Mỗi cuộn gồm <b>Tem KCS</b> (A5 ngang) và <b>Phiếu chất lượng COA</b> (A5 dọc). Khi in: khổ giấy <b>A5</b>, lề <b>Không có</b>, tắt "Đầu trang và chân trang". Ô chỉ tiêu KCS chưa nhập sẽ in trống.</div>
+<div id="root"></div>
+<?!= include('lib_Qr'); ?>
+<?!= include('lib_Logo'); ?>
+<?!= include('js_Common'); ?>
+<?!= include('js_Tem'); ?>
+</body>
+</html>

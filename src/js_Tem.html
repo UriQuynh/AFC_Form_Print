@@ -1,0 +1,93 @@
+<script>
+/* Tem KCS (BM-18/BP.KCS, A5 ngang) + Phiếu chất lượng COA (A5 dọc) cho các cuộn của 1 phiếu xuất kho. */
+(function () {
+  'use strict';
+  var A = window.AFC, el = A.el, fmt = A.fmt;
+  var B = A.BOOT, P = B.phieu, C = B.config || {}, qs = B.params || {};
+  var root = document.getElementById('root');
+  var kindSel = document.getElementById('kind'), rollSel = document.getElementById('roll');
+  var abs = function (u) { try { return new URL(u, location.href).href; } catch (e) { return u; } };
+  var has = function (x) { return !(x === '' || x === null || x === undefined); };
+  var v = function (x, unit) { return has(x) ? String(x).replace('.', ',') + (unit || '') : el('span', { class: 'empty', text: 'KCS nhập' }); };
+
+  if (!P) {
+    root.append(el('p', { class: 'note err', text: 'Không tìm thấy phiếu xuất kho' + (qs.px ? ' "' + qs.px + '"' : '') + '.' }));
+    document.getElementById('note').classList.add('hidden');
+    return;
+  }
+  var lines = P.lines || [];
+  var rollUrl = function (r) { return abs(A.pageUrl('tem', { px: P.id, cuon: r.maCuon })); };
+  var productName = function (r) { return (r.loaiGiay || 'GIẤY') + ' ' + r.maSP; };
+
+  function kcsSheet(r) {
+    var row = function (a, b, cls) { return el('div', { class: 'kcs-row ' + (cls || '') }, [el('div', {}, a), el('div', {}, b)]); };
+    return el('div', { class: 'sheet a5l' }, el('div', { class: 'kcs' }, [
+      el('div', { class: 'kcs-head' }, [
+        el('img', { src: A.logo(C), alt: 'Giấy A.F.C' }),
+        el('div', { class: 'kcs-co' }, [el('div', { class: 'n', text: C.COMPANY_NAME_UPPER || C.COMPANY_NAME }), el('div', { class: 't', text: 'PHIẾU KIỂM TRA' })]),
+        el('div', { class: 'kcs-r' }, [el('div', { class: 'bm', text: C.KCS_CODE }), el('div', { class: 'qrw' }, A.qrSvg(rollUrl(r), 'L')), el('div', { class: 'code', text: r.maCuon })]),
+      ]),
+      el('div', { class: 'kcs-rows' }, [
+        row('TÊN SẢN PHẨM', productName(r)),
+        row('KHỔ ( cm )', v(r.khoGiay)),
+        row('ĐỊNH LƯỢNG ( g/m2 )', v(r.dinhLuong)),
+        row('TRỌNG LƯỢNG ( kg )', fmt(r.kg), 'w'),
+        row('ĐỘ DÀY ( mm )', v(r.doDay)),
+        row('ĐỘ ẨM ( % )', v(r.doAm)),
+        el('div', { class: 'kcs-row' }, [el('div', {}, 'SỐ MỐI NỐI : ' + (has(r.moiNoi) ? r.moiNoi : 0)), el('div', { style: 'font-size:17pt' }, 'SỐ DẤU THỬ:' + (r.dauThu || '01'))]),
+        row('NGÀY SẢN XUẤT', A.dmy(r.ngaySX)),
+        el('div', { class: 'kcs-row foot' }, [el('div', {}, 'CA SẢN XUẤT: ' + (r.ca || '')), el('div', {}, 'MÁY : ' + (r.may || '')), el('div', {}, 'CA SANG CUỘN:')]),
+      ]),
+    ]));
+  }
+
+  function coaSheet(r) {
+    var tr = function (vi, en, val) { return el('tr', {}, [el('td', {}, [el('b', { text: vi }), el('br'), el('b', { text: en })]), el('td', { class: 'val' }, val)]); };
+    var info = el('td', { class: 'h-info' }, [C.COMPANY_EN, el('br'), 'Address : ' + C.COMPANY_ADDRESS, el('br'), 'Hotline: (Zalo, Whatsapp)', el('br'), C.COMPANY_HOTLINE]);
+    return el('div', { class: 'sheet a5p' }, el('div', { class: 'coa' }, el('table', {}, [
+      el('colgroup', {}, [el('col', { style: 'width:46%' }), el('col', { style: 'width:54%' })]),
+      el('tbody', {}, [
+        el('tr', { style: 'height:24mm' }, [el('td', { class: 'h-logo' }, el('img', { src: A.logo(C), alt: 'Giấy A.F.C' })), info]),
+        el('tr', { class: 'h-type' }, [el('td', { text: 'LOẠI GIẤY' }), el('td', { text: productName(r) })]),
+        tr('Định lượng (g/m2) (+-3%)', 'Basic Weight', v(r.dinhLuong)),
+        tr('Độ chịu bục (kgf/cm2)', 'Bursting', v(r.doBuc)),
+        tr('Độ dày (mm )', 'Thickness', v(r.doDay)),
+        tr('Nén vòng (kgf)', 'Compression', v(r.nenVong)),
+        tr('Tách lớp (J/m2 )', 'Ply bond', v(r.tachLop)),
+        tr('Độ ẩm (+- 1 %)', 'Moisture', v(r.doAm)),
+        tr('Độ thấm hút nước', 'Cobb (60s)', v(r.cobb)),
+        tr('Khổ giấy (cm)', 'Width', v(r.khoGiay)),
+        tr('Khối lượng (kg)', 'Weight of roll', fmt(r.kg)),
+        el('tr', {}, [el('td', {}, [el('b', { text: 'Số mối nối : ' + (has(r.moiNoi) ? r.moiNoi : 0) }), el('br'), el('b', { text: 'Number of breaks' })]),
+          el('td', {}, [el('b', { text: 'Số dấu thử : ' + (Number(r.dauThu) || r.dauThu || 1) }), el('br'), el('b', { text: 'Test try number' })])]),
+        tr('Ngày sản xuất', 'Manufacture day', A.dmy(r.ngaySX)),
+        el('tr', {}, [el('td', {}, [el('b', { text: 'Ca sản xuất' }), el('br'), el('b', { text: 'Manufacture shift' })]),
+          el('td', { class: 'val qrcell' }, [r.ca || '', el('div', { class: 'qrmini' }, A.qrSvg(rollUrl(r), 'L'))])]),
+      ]),
+    ])));
+  }
+
+  function render() {
+    root.replaceChildren();
+    var kind = kindSel.value, code = rollSel.value;
+    var rolls = lines.filter(function (r) { return code === 'all' || r.maCuon === code; });
+    rolls.forEach(function (r) {
+      if (kind !== 'coa') root.append(kcsSheet(r));
+      if (kind !== 'kcs') root.append(coaSheet(r));
+    });
+    var pages = rolls.length * (kind === 'both' ? 2 : 1);
+    document.getElementById('ttl').textContent = 'Phiếu ' + P.so + ' · ' + P.khach + ' · ' + pages + ' tem A5';
+    A.fitSheets();
+  }
+
+  document.getElementById('back').href = A.pageUrl('print', { px: P.id });
+  rollSel.append(el('option', { value: 'all', text: 'Tất cả ' + lines.length + ' cuộn' }));
+  lines.forEach(function (r) { rollSel.append(el('option', { value: r.maCuon, text: r.maCuon + ' · ' + r.maSP + ' · ' + fmt(r.kg) + ' kg' })); });
+  if (qs.cuon && lines.some(function (r) { return r.maCuon === qs.cuon; })) rollSel.value = qs.cuon;
+  if (qs.loai === 'kcs' || qs.loai === 'coa') kindSel.value = qs.loai;
+  kindSel.addEventListener('change', render);
+  rollSel.addEventListener('change', render);
+  document.getElementById('print').addEventListener('click', function () { window.print(); });
+  render();
+})();
+</script>

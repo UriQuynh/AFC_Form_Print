@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>In phiếu xuất kho · Giấy A.F.C</title>
+<?!= include('css_Print'); ?>
+</head>
+<body>
+<?!= boot ?>
+<div class="bar">
+  <b id="ttl">Phiếu xuất kho</b><span class="sp"></span>
+  <a class="btn" id="to-doc" href="#">Biên bản giao nhận</a>
+  <a class="btn" id="to-tem" href="#">Tem KCS + COA (A5)</a>
+  <a class="btn" id="to-form" href="#">Sửa phiếu</a>
+  <button type="button" class="pri" id="print">In (A4)</button>
+</div>
+<div class="note" id="note">Khi in: khổ giấy <b>A4</b>, lề <b>Không có</b> (None), tắt <b>Đầu trang và chân trang</b>. Quét QR góc phải để mở tem KCS + COA của các cuộn trong phiếu.</div>
+<div id="root"></div>
+<?!= include('lib_Qr'); ?>
+<?!= include('lib_Logo'); ?>
+<?!= include('js_Common'); ?>
+<?!= include('js_Print'); ?>
+</body>
+</html>

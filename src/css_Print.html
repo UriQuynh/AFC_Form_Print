@@ -1,0 +1,122 @@
+<style>
+/* Mẫu in: Phiếu xuất kho A4 (BM-04/KH-SX), Biên bản giao nhận A4, Tem KCS A5 (BM-18), COA A5. */
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#e9ebef;color:#111;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:#0f172a;color:#fff;font-size:14px}
+.bar b{font-weight:600}
+.bar .sp{flex:1}
+.bar select,.bar button,.bar a.btn{font:inherit;font-size:13px;min-height:36px;padding:0 12px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#fff;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.bar .pri{background:#1d4ed8;border-color:#1d4ed8}
+.note{max-width:210mm;margin:12px auto 0;padding:10px 14px;background:#fff8e1;border:1px solid #f0d78c;border-radius:8px;font-size:13px;line-height:1.5;color:#5b4a12}
+.note.err{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.sheet{background:#fff;margin:14px auto;box-shadow:0 4px 24px #0002;position:relative}
+.qr{display:block;width:100%;height:auto}
+.void{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}
+.void span{transform:rotate(-28deg);font:700 64pt Arial,sans-serif;color:#dc262640;border:8px solid #dc262640;padding:4mm 12mm;border-radius:6mm}
+
+/* ---------- Phiếu xuất kho A4 ---------- */
+.a4{width:210mm;min-height:297mm;padding:9mm 12mm 6mm}
+.px{width:100%;border-collapse:collapse;table-layout:fixed}
+.px td,.px th{border:1.4px solid #222;padding:1.2mm 1.6mm;font-size:12.5pt;text-align:center;vertical-align:middle}
+.px .px-head td{height:21mm}
+.px .px-logo img{width:100%;max-width:34mm}
+.px .px-co{font-size:11.5pt;line-height:1.35}
+.px .px-co b{font-size:13pt}
+.px .px-ms{font-size:7pt;line-height:1.25;position:relative;padding-right:24mm!important;text-align:left}
+.px .px-ms b{font-size:8pt}
+.px-qr{position:absolute;right:1.2mm;top:1.2mm;width:21mm}
+.px .px-title{font-size:26pt;font-weight:700;letter-spacing:.5px;height:16mm}
+.px .px-so{font-style:italic;font-weight:700;font-size:14pt;text-align:right!important}
+.px .px-date{font-style:italic;text-align:right!important;font-size:12pt}
+.px .px-kh td{height:17mm;font-size:14pt}
+.px .px-kh .lab{text-align:left;font-weight:600}
+.px .px-kh .val{font-weight:700;font-size:20pt;line-height:1.1}
+.px .px-kh .val.long{font-size:15pt}
+.px th{font-weight:700;font-size:12pt;height:12mm}
+.px tbody td{height:7.4mm;padding-top:.6mm;padding-bottom:.6mm}
+.px .tot td{font-weight:700}
+.px .mono{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:9pt;white-space:nowrap;letter-spacing:-.2px}
+.px.pallet .mono{font-size:8.5pt}
+.px.pallet .px-kh .lab{font-size:12pt;white-space:nowrap}
+.px.pallet th{font-size:11pt}
+.px .small{font-size:10pt}
+.px .px-xe td{height:15mm;font-size:24pt;font-weight:700}
+.px .px-xe .drv{display:block;font-size:10.5pt;font-weight:400;margin-top:.5mm}
+.px .px-sign td{height:19mm;vertical-align:top;font-style:italic;font-weight:700;font-size:11pt;text-align:left;border-top:0}
+.px .px-names td{font-weight:700;font-style:italic;font-size:11pt;text-align:left;border-top:0;height:7mm}
+.px .px-src td{font-style:italic;font-size:10pt;text-align:left;border-top:0}
+.px-hint{font-size:8pt;color:#666;text-align:right;margin-top:2mm;word-break:break-all}
+
+/* ---------- Biên bản giao nhận A4 ---------- */
+.bb{font-family:'Times New Roman',Times,serif;font-size:13pt;line-height:1.45}
+.bb-head{display:grid;grid-template-columns:38mm 1fr 24mm;gap:4mm;align-items:center;border-bottom:1.5px solid #111;padding-bottom:3mm}
+.bb-head img{width:100%}
+.bb-head .co{text-align:center}
+.bb-head .co b{font-size:14pt}
+.bb h1{text-align:center;font-size:19pt;margin:6mm 0 1mm;letter-spacing:.3px}
+.bb .sub{text-align:center;font-style:italic;margin-bottom:4mm}
+.bb .party{margin:2mm 0}
+.bb .party b{display:inline-block;min-width:44mm}
+.bb table{width:100%;border-collapse:collapse;margin:3mm 0}
+.bb th,.bb td{border:1px solid #111;padding:1.5mm 2mm;font-size:12pt;vertical-align:top}
+.bb th{background:#eee}
+.bb td.r{text-align:right;white-space:nowrap}
+.bb td.c{text-align:center}
+.bb .codes{font:8.5pt Menlo,Consolas,monospace;color:#333;margin-top:1mm}
+.bb th{font-size:11pt}
+.bb .sign{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin-top:6mm}
+.bb .sign b{display:block}
+.bb .sign i{display:block;font-size:11pt;margin-bottom:22mm}
+
+/* ---------- Tem A5 ---------- */
+.a5l{width:210mm;height:148mm;padding:7mm}
+.a5p{width:148mm;height:210mm;padding:9mm 8mm}
+.kcs{border:2.2px solid #111;outline:1px solid #111;outline-offset:-4px;height:100%;display:flex;flex-direction:column;font-family:'Times New Roman',Times,serif}
+.kcs-head{display:grid;grid-template-columns:42mm 1fr 30mm;align-items:center;gap:3mm;padding:2mm 3mm;border-bottom:2px solid #111}
+.kcs-head img{width:100%}
+.kcs-co{text-align:center}
+.kcs-co .n{font-size:19pt;font-weight:700;font-family:'Arial Narrow',Arial,sans-serif;letter-spacing:-.3px}
+.kcs-co .t{display:inline-block;margin-top:1.5mm;border:1.6px solid #111;border-radius:12mm;padding:.8mm 6mm;font-size:21pt;font-weight:700;font-family:'Arial Narrow',Arial,sans-serif}
+.kcs-r{text-align:center}
+.kcs-r .bm{display:inline-block;border:1.4px solid #111;border-radius:8mm;padding:.5mm 2.5mm;font-size:10pt;font-weight:700;font-family:'Arial Narrow',Arial,sans-serif;margin-bottom:1mm}
+.kcs-r .qrw{width:21mm;margin:0 auto}
+.kcs-r .code{font:600 6.5pt Menlo,Consolas,monospace;margin-top:.3mm}
+.kcs-rows{flex:1;display:grid;grid-template-rows:repeat(6,1fr) .9fr .9fr .9fr}
+.kcs-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1.4px solid #111;align-items:center}
+.kcs-row:last-child{border-bottom:0}
+.kcs-row>div{padding:0 3mm;font-size:17pt;font-weight:700;height:100%;display:flex;align-items:center}
+.kcs-row>div+div{border-left:1.4px solid #111;justify-content:center;font-size:19pt}
+.kcs-row.w>div+div{font-size:24pt}
+.kcs-row.foot{grid-template-columns:1.05fr .9fr 1.2fr}
+.kcs-row.foot>div{font-size:14.5pt;justify-content:flex-start}
+.kcs-row.foot>div+div{border-left:0}
+.empty{color:#b3b8c2;font-weight:400!important;font-style:italic;font-size:10pt!important}
+
+.coa{height:100%;display:flex;flex-direction:column;font-family:'Times New Roman',Times,serif}
+.coa table{width:100%;height:100%;border-collapse:collapse;table-layout:fixed}
+.coa td{border:1.3px solid #111;text-align:center;vertical-align:middle;padding:.6mm 1.5mm;font-size:10.5pt;line-height:1.15}
+.coa td b{font-size:11pt}
+.coa .h-logo img{width:88%}
+.coa .h-info{text-align:left;font-size:8.6pt;line-height:1.3}
+.coa .h-type td{background:#d9d9d9;font-size:15pt;font-weight:700;height:12mm}
+.coa .val{font-size:13pt;font-weight:700}
+.coa .qrcell{position:relative}
+.coa .qrmini{position:absolute;right:1mm;bottom:1mm;width:14mm}
+
+@page a4{size:A4 portrait;margin:0}
+@page a5l{size:A5 landscape;margin:0}
+@page a5p{size:A5 portrait;margin:0}
+@media print{
+  body{background:#fff}
+  .sheet{zoom:1!important;margin:0;box-shadow:none;break-after:page}
+  .sheet:last-child{break-after:auto}
+  .bar,.note,.noprint,.hide-print{display:none!important}
+  .a4{page:a4;min-height:0}
+  .a5l{page:a5l}
+  .a5p{page:a5p}
+  .empty{color:transparent}
+  .px thead{display:table-header-group}
+  .px tr{break-inside:avoid}
+}
+</style>

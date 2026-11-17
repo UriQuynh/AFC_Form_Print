@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Phiếu xuất kho · Giấy A.F.C</title>
+<?!= include('css_App'); ?>
+</head>
+<body>
+<?!= boot ?>
+<div class="top">
+  <div class="brand"><img id="logo" alt="Giấy A.F.C"><b>Xuất kho</b><small>Giấy A.F.C</small></div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-view="form" aria-selected="true">Lập phiếu</button>
+    <button class="tab" role="tab" data-view="list" aria-selected="false">Danh sách</button>
+    <button class="tab" role="tab" data-view="report" aria-selected="false">Báo cáo</button>
+  </nav>
+  <a class="sheet-link hidden" id="sheet-link" target="_blank" rel="noopener">Google Sheet ↗</a>
+</div>
+
+<main>
+  <!-- ===================== LẬP PHIẾU ===================== -->
+  <section class="view" id="v-form">
+    <div class="banner hidden" id="draft-banner">
+      <span>Đã khôi phục <b>bản nháp chưa lưu</b> trên máy này.</span><span class="sp"></span>
+      <button class="btn sm" type="button" id="draft-discard">Bỏ nháp, lập phiếu mới</button>
+    </div>
+    <div class="saved hidden" id="saved-box">
+      <span>Đã lưu phiếu <b id="saved-so"></b></span><span class="pill cancel hidden" id="saved-cancel">Đã huỷ</span><span class="sp"></span>
+      <button class="btn sm pri" type="button" data-print="print">In phiếu xuất kho (A4)</button>
+      <button class="btn sm" type="button" data-print="tem">Tem KCS + COA (A5)</button>
+      <button class="btn sm" type="button" data-print="bienban">Biên bản giao nhận</button>
+    </div>
+
+    <div class="card">
+      <header><h2 id="form-title">Phiếu xuất kho mới</h2><span class="sp"></span><span class="hint">Mẫu BM-04/KH-SX</span></header>
+      <div class="body grid" id="hdr">
+        <div class="f"><label for="f-so">Số phiếu <span class="req">*</span></label>
+          <div class="row"><input class="inp" id="f-so" data-k="so" autocomplete="off" placeholder="230/11"><button class="btn icon ghost" type="button" id="so-refresh" title="Lấy số kế tiếp" aria-label="Lấy số phiếu kế tiếp">↻</button></div></div>
+        <div class="f"><label for="f-ngay">Ngày xuất <span class="req">*</span></label><input class="inp" id="f-ngay" data-k="ngay" type="date"></div>
+        <div class="f"><label for="f-kho">Xuất tại kho</label><select class="inp" id="f-kho" data-k="kho"></select></div>
+        <div class="f"><label for="f-nguoiLap">Người lập phiếu</label><input class="inp" id="f-nguoiLap" data-k="nguoiLap" list="dl-staff" autocomplete="off"></div>
+
+        <div class="f s2"><label for="f-khach">Đơn vị nhận hàng <span class="req">*</span></label><input class="inp" id="f-khach" data-k="khach" list="dl-customers" autocomplete="off" placeholder="Chọn hoặc gõ tên mới"></div>
+        <div class="f s2"><label for="f-diaChi">Địa chỉ giao</label><input class="inp" id="f-diaChi" data-k="diaChi" autocomplete="off"></div>
+
+        <div class="f"><label for="f-xe">Biển số xe</label><input class="inp" id="f-xe" data-k="xe" list="dl-vehicles" autocomplete="off" placeholder="50LD-200.94"></div>
+        <div class="f"><label for="f-soHuuXe">Xe</label><select class="inp" id="f-soHuuXe" data-k="soHuuXe"><option value="">—</option><option>Công ty</option><option>Thuê ngoài</option></select></div>
+        <div class="f"><label for="f-taiXe">Tài xế</label><input class="inp" id="f-taiXe" data-k="taiXe" list="dl-drivers" autocomplete="off"></div>
+        <div class="f"><label for="f-sdtTaiXe">SĐT tài xế</label><input class="inp" id="f-sdtTaiXe" data-k="sdtTaiXe" inputmode="tel" autocomplete="off"></div>
+
+        <div class="f"><label for="f-thuKho">Thủ kho</label><input class="inp" id="f-thuKho" data-k="thuKho" list="dl-staff" autocomplete="off"></div>
+        <div class="f"><label for="f-phuCap">Phụ cấp chuyến (đ)</label><input class="inp" id="f-phuCap" data-k="phuCap" inputmode="numeric" autocomplete="off" placeholder="0"></div>
+        <div class="f s2"><label for="f-ghiChu">Ghi chú</label><input class="inp" id="f-ghiChu" data-k="ghiChu" autocomplete="off"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <header><h2>Hàng xuất</h2><span class="sp"></span><span class="hint hide-sm">Mã cuộn tự sinh khi lưu: Máy-ngàySX-Ca-STT</span></header>
+      <div class="body">
+        <div id="groups"></div>
+        <button class="btn" type="button" id="add-group">+ Thêm mặt hàng</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DANH SÁCH ===================== -->
+  <section class="view" id="v-list" hidden>
+    <div class="card">
+      <header><h2>Danh sách phiếu xuất kho</h2><span class="sp"></span><span class="hint" id="list-count"></span></header>
+      <div class="body filters">
+        <div class="f"><label for="l-from">Từ ngày</label><input class="inp" id="l-from" type="date"></div>
+        <div class="f"><label for="l-to">Đến ngày</label><input class="inp" id="l-to" type="date"></div>
+        <div class="f q"><label for="l-q">Tìm (số phiếu, khách, xe, tài xế)</label><input class="inp" id="l-q" type="search" autocomplete="off"></div>
+        <button class="btn pri" type="button" id="l-go">Lọc</button>
+      </div>
+      <div class="tbl-wrap"><table class="list" id="l-table">
+        <thead><tr><th>Ngày</th><th>Số phiếu</th><th>Đơn vị nhận hàng</th><th>Kho</th><th>Xe</th><th>Tài xế</th><th class="r">Cuộn/pallet</th><th class="r">Thực xuất (kg)</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody></tbody><tfoot></tfoot>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ===================== BÁO CÁO ===================== -->
+  <section class="view" id="v-report" hidden>
+    <div class="card">
+      <header><h2>Báo cáo sản lượng xuất kho &amp; chuyến tài xế</h2></header>
+      <div class="body filters">
+        <div class="f"><label for="r-from">Từ ngày</label><input class="inp" id="r-from" type="date"></div>
+        <div class="f"><label for="r-to">Đến ngày</label><input class="inp" id="r-to" type="date"></div>
+        <button class="btn pri" type="button" id="r-go">Xem báo cáo</button>
+        <span class="sp" style="flex:1"></span>
+        <button class="btn" type="button" id="r-export">Xuất bảng lương ra Sheet</button>
+      </div>
+    </div>
+    <div id="r-out"></div>
+  </section>
+</main>
+
+<div class="bottom" id="bottom">
+  <div class="in">
+    <div class="tot">
+      <div><small>Số cuộn/pallet</small><b id="t-count">0</b></div>
+      <div><small>Tổng kg</small><b id="t-kg">0</b></div>
+      <div id="t-bi-wrap" class="hidden"><small>Trừ bì</small><b id="t-bi">0</b></div>
+      <div class="big"><small>Thực xuất (kg)</small><b id="t-net">0</b></div>
+    </div>
+    <span class="sp"></span>
+    <div class="acts">
+      <button class="btn" type="button" id="btn-new">Phiếu mới</button>
+      <button class="btn danger hidden" type="button" id="btn-cancel">Huỷ phiếu</button>
+      <button class="btn" type="button" id="btn-save">Lưu</button>
+      <button class="btn pri" type="button" id="btn-save-print">Lưu &amp; in phiếu</button>
+    </div>
+  </div>
+</div>
+
+<datalist id="dl-customers"></datalist>
+<datalist id="dl-vehicles"></datalist>
+<datalist id="dl-drivers"></datalist>
+<datalist id="dl-staff"></datalist>
+
+<dialog id="kcs-dlg">
+  <form method="dialog">
+    <header><h3>Chỉ tiêu KCS · <span id="kcs-code" style="font-family:var(--mono)"></span></h3></header>
+    <div class="body">
+      <div class="grid" id="kcs-fields"></div>
+      <p class="hint" style="margin:12px 0 0">Để trống ô nào thì tem/COA in ô đó trống. Dấu thập phân dùng dấu phẩy hoặc chấm đều được.</p>
+    </div>
+    <footer>
+      <button class="btn ghost" value="cancel" type="submit">Đóng</button>
+      <button class="btn" type="button" id="kcs-all">Áp dụng cho cả nhóm</button>
+      <button class="btn pri" type="button" id="kcs-ok">Lưu chỉ tiêu</button>
+    </footer>
+  </form>
+</dialog>
+
+<div class="loading hidden" id="loading"><div class="spin"></div><span id="loading-text">Đang tải…</span></div>
+
+<?!= include('lib_Logo'); ?>
+<?!= include('js_Common'); ?>
+<?!= include('js_Form'); ?>
+</body>
+</html>

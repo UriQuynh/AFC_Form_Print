@@ -1,0 +1,154 @@
+<script>
+/* Tiện ích dùng chung cho Form / Phiếu in / Tem (không dùng innerHTML với dữ liệu người dùng). */
+window.AFC = (function () {
+  'use strict';
+  var BOOT = window.__BOOT__ || {};
+
+  function el(tag, props, kids) {
+    var n = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v === undefined || v === null || v === false) return;
+      if (k === 'class') n.className = v;
+      else if (k === 'style') n.style.cssText = v;
+      else if (k === 'text') n.textContent = v;
+      else if (k.indexOf('on') === 0 && typeof v === 'function') n.addEventListener(k.slice(2), v);
+      else if (k.indexOf('data-') === 0 || k.indexOf('aria-') === 0 || k === 'colspan' || k === 'rowspan' || k === 'for' || k === 'list' || k === 'role') n.setAttribute(k, v);
+      else n[k] = v;
+    });
+    [].concat(kids === undefined ? [] : kids).forEach(function (c) {
+      if (c === null || c === undefined || c === false) return;
+      n.append(c instanceof Node ? c : String(c));
+    });
+    return n;
+  }
+
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  /** QR dạng SVG (1 path), co giãn theo CSS. */
+  function qrSvg(text, ecc) {
+    var qr = qrcode(0, ecc || 'M');
+    qr.addData(unescape(encodeURIComponent(text)));
+    qr.make();
+    var n = qr.getModuleCount(), m = 2, d = '';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (qr.isDark(r, c)) d += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+    var svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m));
+    svg.setAttribute('shape-rendering', 'crispEdges');
+    svg.setAttribute('class', 'qr');
+    var bg = document.createElementNS(SVGNS, 'rect');
+    bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%'); bg.setAttribute('fill', '#fff');
+    var p = document.createElementNS(SVGNS, 'path');
+    p.setAttribute('d', d); p.setAttribute('fill', '#000');
+    svg.append(bg, p);
+    return svg;
+  }
+
+  function fmt(n) {
+    if (n === '' || n === null || n === undefined || isNaN(Number(n))) return '';
+    return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+  }
+  function money(n) { return fmt(Math.round(Number(n) || 0)); }
+
+  /** '2026-11-14' -> '14/11/2026' */
+  function dmy(iso) {
+    var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? m[3] + '/' + m[2] + '/' + m[1] : String(iso || '');
+  }
+  function parts(iso) {
+    var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? { y: Number(m[1]), m: Number(m[2]), d: Number(m[3]) } : null;
+  }
+  function ddMMyy(iso) { var p = parts(iso); return p ? ('0' + p.d).slice(-2) + ('0' + p.m).slice(-2) + String(p.y).slice(-2) : ''; }
+
+  /** "1.154" | "1,154" | "1154" | "12,5" -> number ; '' -> NaN */
+  function num(v) {
+    if (typeof v === 'number') return v;
+    var s = String(v === undefined || v === null ? '' : v).trim().replace(/\s/g, '');
+    if (!s) return NaN;
+    if (/^\d{1,3}([.,]\d{3})+$/.test(s)) s = s.replace(/[.,]/g, '');
+    else s = s.replace(',', '.');
+    return Number(s);
+  }
+
+  /** Gọi hàm server: Promise. */
+  function call(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return new Promise(function (resolve, reject) {
+      var r = google.script.run.withSuccessHandler(resolve).withFailureHandler(function (e) {
+        reject(new Error((e && e.message) || String(e)));
+      });
+      r[fn].apply(r, args);
+    });
+  }
+
+  function baseUrl() { return (BOOT.webAppUrl || window.__WEBAPP_URL__ || ''); }
+  /** URL tới 1 trang của web app (preview dùng file .html cục bộ). */
+  function pageUrl(page, params) {
+    var q = [];
+    Object.keys(params || {}).forEach(function (k) {
+      if (params[k] !== '' && params[k] !== undefined && params[k] !== null) q.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
+    });
+    if (window.__PREVIEW__) {
+      var file = { form: 'index.html', print: 'print.html', bienban: 'print.html', tem: 'tem.html' }[page] || 'index.html';
+      if (page === 'bienban') q.unshift('page=bienban');
+      return file + (q.length ? '?' + q.join('&') : '');
+    }
+    if (page !== 'form') q.unshift('page=' + page);
+    var b = baseUrl();
+    return b + (q.length ? (b.indexOf('?') >= 0 ? '&' : '?') + q.join('&') : '');
+  }
+
+  /** Mở trang mới (Apps Script chạy trong iframe -> phải mở ở top/tab mới). */
+  function open(page, params, sameTab) {
+    var url = pageUrl(page, params);
+    if (sameTab) { window.top.location.href = url; return; }
+    var w = window.open(url, '_blank');
+    if (!w) window.top.location.href = url;
+  }
+
+  function logo(cfg) {
+    var u = cfg && cfg.LOGO_URL;
+    return u ? u : (window.AFC_LOGO || '');
+  }
+
+  /** Thu nhỏ trang A4/A5 cho vừa màn hình điện thoại; khi in giữ nguyên. */
+  function fitSheets() {
+    var apply = function () {
+      document.querySelectorAll('.sheet').forEach(function (s) {
+        s.style.zoom = '';
+        var w = s.offsetWidth, avail = document.documentElement.clientWidth - 16;
+        if (w > avail) s.style.zoom = String(avail / w);
+      });
+    };
+    apply();
+    if (!fitSheets._bound) {
+      fitSheets._bound = true;
+      window.addEventListener('resize', apply);
+      window.addEventListener('beforeprint', function () { document.querySelectorAll('.sheet').forEach(function (s) { s.style.zoom = ''; }); });
+      window.addEventListener('afterprint', apply);
+    }
+  }
+
+  var toastTimer;
+  function toast(msg, kind) {
+    var t = document.getElementById('toast');
+    if (!t) { t = el('div', { id: 'toast', role: 'status', 'aria-live': 'polite' }); document.body.append(t); }
+    t.textContent = msg;
+    t.className = 'show ' + (kind || '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = ''; }, kind === 'err' ? 7000 : 3200);
+  }
+
+  function store(key, val) {
+    try {
+      if (val === undefined) return JSON.parse(localStorage.getItem(key) || 'null');
+      if (val === null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) { return null; }
+    return null;
+  }
+
+  return { BOOT: BOOT, el: el, qrSvg: qrSvg, fmt: fmt, money: money, dmy: dmy, parts: parts, ddMMyy: ddMMyy, num: num,
+    call: call, pageUrl: pageUrl, open: open, logo: logo, fitSheets: fitSheets, toast: toast, store: store };
+})();
+</script>

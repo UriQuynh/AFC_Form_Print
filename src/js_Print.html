@@ -1,0 +1,204 @@
+<script>
+/* Phiếu xuất kho A4 (BM-04/KH-SX) + Biên bản giao nhận A4. */
+(function () {
+  'use strict';
+  var A = window.AFC, el = A.el, fmt = A.fmt;
+  var B = A.BOOT, P = B.phieu, C = B.config || {}, params = B.params || {};
+  var doc = (B.page === 'bienban' || params.page === 'bienban') ? 'bienban' : 'print';
+  var root = document.getElementById('root');
+  var abs = function (u) { try { return new URL(u, location.href).href; } catch (e) { return u; } };
+
+  if (!P) {
+    root.append(el('p', { class: 'note err', text: 'Không tìm thấy phiếu xuất kho' + (params.px ? ' "' + params.px + '"' : '') + '. Mở lại từ danh sách phiếu trên form.' }));
+    document.getElementById('note').classList.add('hidden');
+    return;
+  }
+
+  var cancelled = P.trangThai === 'Đã huỷ';
+  document.title = (doc === 'bienban' ? 'Biên bản giao nhận ' : 'Phiếu xuất kho ') + P.so + ' · ' + P.khach;
+  document.getElementById('ttl').textContent = (doc === 'bienban' ? 'Biên bản giao nhận · ' : 'Phiếu ') + P.so + ' · ' + P.khach + (cancelled ? ' · ĐÃ HUỶ' : '');
+  var toDoc = document.getElementById('to-doc');
+  toDoc.textContent = doc === 'bienban' ? 'Phiếu xuất kho' : 'Biên bản giao nhận';
+  toDoc.href = A.pageUrl(doc === 'bienban' ? 'print' : 'bienban', { px: P.id });
+  document.getElementById('to-tem').href = A.pageUrl('tem', { px: P.id });
+  document.getElementById('to-form').href = A.pageUrl('form', { px: P.id });
+  document.getElementById('print').addEventListener('click', function () { window.print(); });
+  if (doc === 'bienban') document.getElementById('note').textContent = 'Biên bản giao nhận in kèm phiếu xuất kho, khổ A4, lề "Không có". Tài xế và khách hàng ký nhận.';
+
+  var lines = P.lines || [];
+  var td = function (txt, props) { return el('td', props || {}, txt); };
+  var d = A.parts(P.ngay) || { d: '', m: '', y: '' };
+
+  // Nhóm các dòng liên tiếp cùng mã SP
+  var groups = [];
+  lines.forEach(function (l) {
+    var g = groups[groups.length - 1];
+    if (!g || g.maSP !== l.maSP) { g = { maSP: l.maSP, loaiGiay: l.loaiGiay, donVi: l.donVi, khoGiay: l.khoGiay, dinhLuong: l.dinhLuong, rows: [] }; groups.push(g); }
+    g.rows.push(l);
+  });
+  groups.forEach(function (g) {
+    g.kg = g.rows.reduce(function (s, r) { return s + (Number(r.kg) || 0); }, 0);
+    g.bi = g.rows.reduce(function (s, r) { return s + (Number(r.truBi) || 0); }, 0);
+    g.net = g.kg - g.bi;
+  });
+  var pallet = lines.length > 0 && lines.every(function (l) { return l.donVi === 'PALLET'; });
+  var types = {}; lines.forEach(function (l) { types[l.loaiGiay] = 1; });
+  var typeLabel = Object.keys(types).length === 1 ? Object.keys(types)[0] : 'LOẠI GIẤY';
+
+  function voidMark() { return cancelled ? el('div', { class: 'void' }, el('span', { text: 'ĐÃ HUỶ' })) : null; }
+
+  // ===================== PHIẾU XUẤT KHO =====================
+  function renderPhieu() {
+    var temUrl = abs(A.pageUrl('tem', { px: P.id }));
+    var widths = pallet ? [12, 31, 24, 17, 14, 38, 50] : [16, 32, 26, 24, 38, 50];
+    var pxClass = 'px' + (pallet ? ' pallet' : '');
+    var N = widths.length;
+    var colgroup = function () { return el('colgroup', {}, widths.map(function (w) { return el('col', { style: 'width:' + w + 'mm' }); })); };
+    var blank = function (stt) { var c = [td(String(stt))]; for (var i = 1; i < N; i++) c.push(td('')); return el('tr', {}, c); };
+    var ditto = '"';
+
+    var tb = el('tbody'), stt = 0;
+    var pushRow = function (cells, cls) { tb.append(el('tr', { class: cls || '' }, cells)); };
+
+    groups.forEach(function (g, gi) {
+      var prevCa = null;
+      if (pallet) {
+        pushRow([td(String(++stt)), td(g.maSP, { style: 'font-weight:700' }), td(''), td(''), td(''), td(''), td('')]);
+        g.rows.forEach(function (r, i) {
+          var ca = r.ca === prevCa ? ditto : r.ca; prevCa = r.ca;
+          pushRow([td(String(++stt)), td('PALLET ' + (i + 1)), td(fmt(r.kg)), td(r.soBanh === '' ? '' : fmt(r.soBanh)), td(ca), td(r.maCuon, { class: 'mono' }), td(r.ghiChu || '', { class: 'small' })]);
+        });
+        pushRow([td(String(++stt)), td('TỔNG'), td(fmt(g.kg)), td('KG'), td(''), td(''), td('')], 'tot');
+        if (g.bi) {
+          var per = g.rows.length ? Math.round(g.bi / g.rows.length * 100) / 100 : 0;
+          pushRow([td(String(++stt)), td('TRỪ ' + fmt(per) + 'kg/1pallet', { class: 'small', style: 'font-weight:700;white-space:nowrap;font-size:9.5pt' }), td('-' + fmt(g.bi)), td('KG'), td(''), td(''), td('')], 'tot');
+          pushRow([td(String(++stt)), td('THỰC XUẤT'), td(fmt(g.net)), td('KG'), td(''), td(''), td('')], 'tot');
+        }
+      } else {
+        g.rows.forEach(function (r, i) {
+          var name = i === 0 ? g.maSP : i === 1 ? g.rows.length + ' CUỘN' : ditto;
+          var ca = i === 0 || r.ca !== prevCa ? r.ca : ditto; prevCa = r.ca;
+          pushRow([td(String(++stt)), td(name), td(fmt(r.kg)), td(ca), td(r.maCuon, { class: 'mono' }), td(r.ghiChu || '', { class: 'small' })]);
+        });
+        pushRow([td(String(++stt)), td('TỔNG'), td(fmt(g.kg)), td('KG'), td(g.rows.length === 1 ? '1 CUỘN' : ''), td('')], 'tot');
+      }
+      if (gi < groups.length - 1) tb.append(blank(++stt));
+    });
+
+    var showGrand = !pallet || groups.length > 1;
+    var minRows = Math.max(Number(C.MIN_ROWS) || 20, 1);
+    while (stt < minRows - (showGrand ? 1 : 0)) tb.append(blank(++stt));
+    if (showGrand) {
+      var net = P.thucXuat;
+      var grand = [td(String(++stt)), td(pallet ? 'THỰC XUẤT' : 'TỔNG HÀNG'), td(fmt(net)), td('KG')];
+      for (var i = 4; i < N; i++) grand.push(td(''));
+      if (!pallet && P.truBi) grand[4] = td('đã trừ bì ' + fmt(P.truBi) + ' kg', { class: 'small' });
+      pushRow(grand, 'tot');
+    }
+
+    var headCells = pallet
+      ? ['STT', typeLabel, 'SỐ LƯỢNG (kg)', 'SỐ BÁNH', 'CA SX', 'MÃ PALLET', 'GHI CHÚ']
+      : ['STT', typeLabel, 'SỐ LƯỢNG (kg)', 'CA SX', 'MÃ CUỘN', 'GHI CHÚ'];
+
+    // Bảng 1: tiêu đề — gộp cột theo bố cục 6 cột gốc
+    var span = pallet ? { logo: 2, co: 4, ms: 1, title: 6, kh1: 2, kh2: 2, kh3: 2, kh4: 1 } : { logo: 2, co: 3, ms: 1, title: 5, kh1: 2, kh2: 2, kh3: 1, kh4: 1 };
+    var qrBox = el('div', { class: 'px-qr', title: temUrl }, A.qrSvg(temUrl));
+    var t1 = el('table', { class: pxClass }, [colgroup(), el('tbody', {}, [
+      el('tr', { class: 'px-head' }, [
+        td(el('img', { src: A.logo(C), alt: 'Giấy A.F.C' }), { class: 'px-logo', colspan: span.logo }),
+        td([el('b', { text: C.COMPANY_NAME }), el('br'), C.DEPT_LINE_1, el('br'), C.DEPT_LINE_2], { class: 'px-co', colspan: span.co }),
+        td([el('b', { text: C.FORM_CODE }), el('br'), C.FORM_NOTE, qrBox], { class: 'px-ms', colspan: span.ms }),
+      ]),
+      el('tr', {}, [td('PHIẾU XUẤT KHO', { class: 'px-title', colspan: span.title }), td('Số:' + P.so, { class: 'px-so' })]),
+      el('tr', {}, [td('Ngày ' + d.d + ' tháng ' + d.m + ' năm ' + d.y, { class: 'px-date', colspan: N })]),
+    ])]);
+    var noTop = 'border-top:0';
+    var t2 = el('table', { class: pxClass, style: noTop }, [colgroup(), el('tbody', {}, [el('tr', { class: 'px-kh' }, [
+      td('Đơn vị nhận hàng:', { class: 'lab', colspan: span.kh1, style: noTop + ';vertical-align:bottom' }),
+      td(P.khach, { class: 'val' + (P.khach.length > 22 ? ' long' : ''), colspan: span.kh2, style: noTop }),
+      td('Xuất tại kho A.F.C:', { class: 'lab', colspan: span.kh3, style: noTop + ';vertical-align:bottom' }),
+      td(P.kho, { colspan: span.kh4, style: noTop + ';vertical-align:bottom;font-weight:700' }),
+    ])])]);
+    var t3 = el('table', { class: pxClass }, [colgroup(),
+      el('thead', {}, el('tr', {}, headCells.map(function (h) { return el('th', { text: h, style: noTop }); }))),
+      tb]);
+
+    var xeText = (P.xe || '') + (pallet ? ' (TỔNG ' + P.soLuong + ' PALLET)' : '');
+    var drv = [P.taiXe ? 'Tài xế: ' + P.taiXe : '', P.sdtTaiXe].filter(Boolean).join(' – ');
+    var signSpan = pallet ? [2, 2, 2, 1] : [2, 2, 1, 1];
+    var t4 = el('table', { class: pxClass }, [colgroup(), el('tbody', {}, [
+      el('tr', { class: 'px-xe' }, [td('XE', { colspan: 2, style: noTop }), td([xeText, drv ? el('span', { class: 'drv', text: drv }) : null], { colspan: N - 2, style: noTop + (xeText.length > 22 ? ';font-size:18pt' : '') })]),
+      el('tr', { class: 'px-sign' }, [
+        td('Người lập phiếu', { colspan: signSpan[0], style: 'border-right:0;border-bottom:0' }),
+        td('Người nhận hàng', { colspan: signSpan[1], style: 'border-left:0;border-right:0;border-bottom:0' }),
+        td('Thủ kho', { colspan: signSpan[2], style: 'border-left:0;border-right:0;border-bottom:0' }),
+        td('Giám Đốc', { colspan: signSpan[3], style: 'border-left:0;border-bottom:0' }),
+      ]),
+      el('tr', { class: 'px-names' }, [
+        td(P.nguoiLap || '', { colspan: signSpan[0], style: 'border-right:0' }),
+        td('', { colspan: signSpan[1], style: 'border-left:0;border-right:0' }),
+        td(P.thuKho || '', { colspan: signSpan[2], style: 'border-left:0;border-right:0' }),
+        td('', { colspan: signSpan[3], style: 'border-left:0' }),
+      ]),
+      el('tr', { class: 'px-src' }, [td(C.FORM_SOURCE, { colspan: N })]),
+    ])]);
+    var sheet = el('div', { class: 'sheet a4' }, [voidMark(), t1, t2, t3, t4,
+      P.ghiChu ? el('div', { class: 'px-hint', style: 'text-align:left;color:#111;font-size:10pt', text: 'Ghi chú: ' + P.ghiChu }) : null,
+      el('div', { class: 'px-hint hide-print', text: 'QR → ' + temUrl })]);
+    root.append(sheet);
+  }
+
+  // ===================== BIÊN BẢN GIAO NHẬN =====================
+  function renderBienBan() {
+    var temUrl = abs(A.pageUrl('tem', { px: P.id }));
+    var party = function (label, value) { return el('div', { class: 'party' }, [el('b', { text: label }), value || '……………………………………']); };
+    var rows = groups.map(function (g, i) {
+      var spec = [g.khoGiay !== '' && g.khoGiay !== undefined ? 'Khổ ' + g.khoGiay + ' cm' : '', g.dinhLuong ? g.dinhLuong + ' g/m²' : ''].filter(Boolean).join(' · ');
+      var banh = g.rows.reduce(function (s, r) { return s + (Number(r.soBanh) || 0); }, 0);
+      return el('tr', {}, [
+        el('td', { class: 'c', text: String(i + 1) }),
+        el('td', {}, [el('b', { text: g.loaiGiay + ' ' + g.maSP }), spec ? el('div', { style: 'font-size:11pt', text: spec }) : null,
+          el('div', { class: 'codes', text: g.rows.map(function (r) { return r.maCuon; }).join(', ') })]),
+        el('td', { class: 'c', text: (g.donVi === 'PALLET' ? 'Pallet' : 'Cuộn') + (banh ? ' (' + fmt(banh) + ' bánh)' : '') }),
+        el('td', { class: 'r', text: fmt(g.rows.length) }),
+        el('td', { class: 'r', text: fmt(g.kg) }),
+        el('td', { class: 'r', text: g.bi ? '-' + fmt(g.bi) : '' }),
+        el('td', { class: 'r', text: fmt(g.net) }),
+      ]);
+    });
+    var sheet = el('div', { class: 'sheet a4' }, [voidMark(), el('div', { class: 'bb' }, [
+      el('div', { class: 'bb-head' }, [
+        el('img', { src: A.logo(C), alt: 'Giấy A.F.C' }),
+        el('div', { class: 'co' }, [el('b', { text: C.COMPANY_NAME }), el('br'), C.DEPT_LINE_1]),
+        el('div', {}, A.qrSvg(temUrl, 'L')),
+      ]),
+      el('h1', { text: 'BIÊN BẢN GIAO NHẬN HÀNG HOÁ' }),
+      el('div', { class: 'sub', text: 'Kèm phiếu xuất kho số ' + P.so + ' · Ngày ' + d.d + ' tháng ' + d.m + ' năm ' + d.y }),
+      party('Bên giao:', C.COMPANY_NAME + ' — xuất tại kho ' + (P.kho || '')),
+      party('Bên nhận:', P.khach),
+      party('Địa chỉ giao hàng:', P.diaChi),
+      party('Phương tiện:', [P.xe, P.soHuuXe ? '(' + P.soHuuXe + ')' : ''].filter(Boolean).join(' ')),
+      party('Tài xế:', [P.taiXe, P.sdtTaiXe].filter(Boolean).join(' – ')),
+      el('table', {}, [
+        el('colgroup', {}, [10, 0, 22, 17, 25, 18, 25].map(function (w) { return el('col', { style: w ? 'width:' + w + 'mm' : '' }); })),
+        el('thead', {}, el('tr', {}, ['STT', 'Hàng hoá / mã cuộn', 'ĐVT', 'Số lượng', 'Trọng lượng (kg)', 'Trừ bì', 'Thực giao (kg)'].map(function (h) { return el('th', { text: h }); }))),
+        el('tbody', {}, rows),
+        el('tfoot', {}, el('tr', {}, [el('td', { colspan: 3, text: 'TỔNG CỘNG', style: 'font-weight:700' }), el('td', { class: 'r', text: fmt(P.soLuong) }), el('td', { class: 'r', text: fmt(P.tongKg) }),
+          el('td', { class: 'r', text: P.truBi ? '-' + fmt(P.truBi) : '' }), el('td', { class: 'r', style: 'font-weight:700', text: fmt(P.thucXuat) })])),
+      ]),
+      el('p', { text: 'Hai bên đã kiểm đếm, giao nhận đủ số lượng và trọng lượng hàng hoá như trên; hàng hoá nguyên vẹn, đúng quy cách. Biên bản lập thành 02 bản, mỗi bên giữ 01 bản có giá trị như nhau.' }),
+      P.ghiChu ? el('p', { text: 'Ghi chú: ' + P.ghiChu }) : null,
+      el('div', { class: 'sign' }, [
+        el('div', {}, [el('b', { text: 'ĐẠI DIỆN BÊN GIAO' }), el('i', { text: '(Ký, ghi rõ họ tên)' }), P.thuKho || '']),
+        el('div', {}, [el('b', { text: 'TÀI XẾ' }), el('i', { text: '(Ký, ghi rõ họ tên)' }), P.taiXe || '']),
+        el('div', {}, [el('b', { text: 'ĐẠI DIỆN BÊN NHẬN' }), el('i', { text: '(Ký, ghi rõ họ tên)' }), '']),
+      ]),
+    ])]);
+    root.append(sheet);
+  }
+
+  if (doc === 'bienban') renderBienBan(); else renderPhieu();
+  A.fitSheets();
+  if (params.auto) setTimeout(function () { window.print(); }, 600);
+})();
+</script>
