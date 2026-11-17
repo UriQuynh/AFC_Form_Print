@@ -153,13 +153,28 @@ src/                 # Mã nguồn Apps Script (đẩy lên bằng clasp, rootDi
 dev/fake-gas.js      # giả lập SpreadsheetApp/Utilities… để chạy src/*.gs ngoài Google
 dev/preview-runtime.js
 tools/test.mjs       # test logic server (Node)
+tools/e2e.mjs        # test giao diện E2E (Chrome headless qua puppeteer-core)
 tools/make-buttons.py    # vẽ lại ảnh nút bấm cho sheet Nhập PXK
 tools/build-preview.mjs  # dựng bản xem trước offline vào preview/
 ```
 
 ```bash
-npm test               # chạy test logic server trên sheet giả lập
+npm install            # lần đầu: cài puppeteer-core (dùng Chrome có sẵn, không tải trình duyệt)
 ```
+
+```bash
+npm test               # 34 test logic server (src/*.gs) trên sheet giả lập
+```
+
+```bash
+npm run test:e2e       # 15 test giao diện trong Chrome headless: form, lưu/sửa/huỷ, nháp, phiếu in A4, tem A5, biên bản, báo cáo, điện thoại
+```
+
+```bash
+npm run test:all       # chạy cả hai
+```
+
+Test E2E dựng bản preview rồi bấm thật trên giao diện; kiểm tra cả bản in xuất PDF đúng 1 trang A4 / khổ A5. Nếu Chrome không nằm ở vị trí mặc định, đặt biến `CHROME_PATH`.
 
 ```bash
 npm run preview        # dựng preview/ và mở http://localhost:5178
