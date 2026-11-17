@@ -22,6 +22,20 @@ var SEED = {
 };
 
 function setupSheets() {
+  // Chặn 2 lần chạy song song (vd bấm menu 2 lần) -> tránh tạo sheet "..._conflict"
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(1000)) {
+    try { SpreadsheetApp.getUi().alert('Đang có một lần cài đặt khác chạy. Đợi chạy xong rồi thử lại.'); } catch (e) { /* editor */ }
+    return false;
+  }
+  try {
+    return setupSheetsLocked_();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function setupSheetsLocked_() {
   var ss = ss_();
   PropertiesService.getScriptProperties().setProperty(SPREADSHEET_ID_PROP, ss.getId());
   try { ss.setSpreadsheetTimeZone(APP.TZ); } catch (e) { /* ignore */ }
@@ -30,15 +44,17 @@ function setupSheets() {
   var created = {};
   order.forEach(function (name) {
     if (name === 'BaoCao') return;
+    if (SCHEMA[name].kind === 'list') migrateActiveColumn_(ss, name);
     created[name] = ensureSheet_(ss, name);
   });
+  removeEmptyConflictSheets_(ss);
 
   // Dữ liệu ban đầu cho danh mục mới tạo
   Object.keys(SEED).forEach(function (name) {
     if (!created[name] || !SEED[name].length) return;
     var keys = SCHEMA[name].cols.map(function (c) { return c[0]; });
     appendObjects_(name, SEED[name].map(function (vals) {
-      var o = { active: true };
+      var o = {};
       vals.forEach(function (v, i) { o[keys[i]] = v; });
       return o;
     }));
@@ -65,7 +81,7 @@ function setupSheets() {
   ss.setActiveSheet(ss.getSheetByName('PhieuXuat'));
 
   try {
-    SpreadsheetApp.getUi().alert('Đã cài đặt xong cấu trúc sheet.\n\nBước tiếp: Tiện ích mở rộng → Apps Script → Triển khai → Ứng dụng web, rồi mở form từ menu "AFC Form".');
+    SpreadsheetApp.getUi().alert('Đã cài đặt xong cấu trúc sheet.\n\nMở form: menu "AFC Form" → "Mở form nhập liệu". (Nếu chưa có web app: Tiện ích mở rộng → Apps Script → Triển khai → Ứng dụng web.)');
   } catch (e) { /* chạy từ editor: không có UI */ }
   return true;
 }
@@ -129,8 +145,9 @@ function applyFormats_(ss) {
 
   Object.keys(SCHEMA).forEach(function (name) {
     if (SCHEMA[name].kind !== 'list') return;
-    var r = colRange_(ss, name, 'active');
-    r.offset(0, 0, Math.min(r.getNumRows(), 500)).insertCheckboxes();
+    // Checkbox "Ngừng dùng": để trống = đang dùng; tick = ẩn khỏi dropdown.
+    // Dùng data validation (không insertCheckboxes) để không ghi FALSE vào hàng trăm dòng trống.
+    colRange_(ss, name, 'ngung').setDataValidation(SpreadsheetApp.newDataValidation().requireCheckbox().build());
     var sh = ss.getSheetByName(name);
     sh.setColumnWidths(1, Math.max(sh.getLastColumn(), 1), 150);
   });
@@ -176,6 +193,8 @@ function applyValidations_(ss) {
 function buildReportSheet_(ss) {
   var sh = ss.getSheetByName('BaoCao') || ss.insertSheet('BaoCao');
   sh.clear();
+  var sep = formulaSeparator_(sh);
+  var F = function (a1, formula) { sh.getRange(a1).setFormula(localizeFormula_(formula, sep)); };
   var C = function (k) { return letterOf_('ChiTiet', k); };
   var P = function (k) { return letterOf_('PhieuXuat', k); };
   var T = function (k) { return letterOf_('DM_TaiXe', k); };
@@ -190,14 +209,14 @@ function buildReportSheet_(ss) {
     .setNumberFormat('dd/MM/yyyy').setBackground('#fff8e1');
   sh.getRange('B2:B3').setDataValidation(SpreadsheetApp.newDataValidation().requireDate().build());
   sh.getRange('C2').setValue('← sửa ngày để lọc');
-  sh.getRange('D2').setFormula('="date \'"&TEXT(IF(B2="",DATE(2000,1,1),B2),"yyyy-mm-dd")&"\'"');
-  sh.getRange('D3').setFormula('="date \'"&TEXT(IF(B3="",DATE(2100,1,1),B3),"yyyy-mm-dd")&"\'"');
+  F('D2', '="date \'"&TEXT(IF(B2="",DATE(2000,1,1),B2),"yyyy-mm-dd")&"\'"');
+  F('D3', '="date \'"&TEXT(IF(B3="",DATE(2100,1,1),B3),"yyyy-mm-dd")&"\'"');
   sh.getRange('D2:D3').setFontColor('#bbbbbb');
 
   var ctRange = 'ChiTiet!A:' + lastCT;
   var pxRange = 'PhieuXuat!A:' + lastPX;
-  var whereCT = '" where ' + C('ngay') + ' >= "&$D$2&" and ' + C('ngay') + ' <= "&$D$3&" and ' + C('trangThai') + ' <> \'' + cancel + '\'';
-  var wherePX = '" where ' + P('ngay') + ' >= "&$D$2&" and ' + P('ngay') + ' <= "&$D$3&" and ' + P('trangThai') + ' <> \'' + cancel + '\'';
+  var whereCT = ' where ' + C('ngay') + ' >= "&$D$2&" and ' + C('ngay') + ' <= "&$D$3&" and ' + C('trangThai') + ' <> \'' + cancel + '\'';
+  var wherePX = ' where ' + P('ngay') + ' >= "&$D$2&" and ' + P('ngay') + ' <= "&$D$3&" and ' + P('trangThai') + ' <> \'' + cancel + '\'';
 
   var blocks = [
     {
@@ -210,7 +229,7 @@ function buildReportSheet_(ss) {
     {
       cell: 'G5', title: 'THEO SẢN PHẨM',
       q: '=QUERY(' + ctRange + ',"select ' + C('maSP') + ', count(' + C('maCuon') + '), sum(' + C('kg') + ')-sum(' + C('truBi') + ')' +
-        whereCT + ' group by ' + C('maSP') + ' order by sum(' + C('kg') + ') desc' +
+        whereCT + ' group by ' + C('maSP') + ' order by count(' + C('maCuon') + ') desc' +
         ' label ' + C('maSP') + ' \'Mã SP\', count(' + C('maCuon') + ') \'Số cuộn/pallet\', sum(' + C('kg') + ')-sum(' + C('truBi') + ') \'Thực xuất (kg)\'",1)',
       fmt: [['H6:I', '#,##0']],
     },
@@ -232,12 +251,12 @@ function buildReportSheet_(ss) {
   blocks.forEach(function (b) {
     var cell = sh.getRange(b.cell);
     cell.offset(-1, 0).setValue(b.title).setFontWeight('bold').setFontColor('#1a56db');
-    cell.setFormula(b.q);
+    F(b.cell, b.q);
     b.fmt.forEach(function (f) { sh.getRange(f[0]).setNumberFormat(f[1]); });
   });
   // Lương = số chuyến × đơn giá/chuyến + tấn × đơn giá/tấn + phụ cấp (đơn giá lấy từ DM_TaiXe)
   var name = T('ten'), dgc = T('donGiaChuyen'), dgt = T('donGiaTan');
-  sh.getRange('T5').setFormula(
+  F('T5',
     '={"Lương (đ)";ARRAYFORMULA(IF(P6:P="","",Q6:Q*IFERROR(VLOOKUP(P6:P,{DM_TaiXe!' + name + ':' + name + ',DM_TaiXe!' + dgc + ':' + dgc + '},2,0),0)' +
     '+R6:R/1000*IFERROR(VLOOKUP(P6:P,{DM_TaiXe!' + name + ':' + name + ',DM_TaiXe!' + dgt + ':' + dgt + '},2,0),0)+N(S6:S)))}');
   sh.getRange('A5:T5').setFontWeight('bold').setBackground('#e8f0fe');
@@ -246,6 +265,86 @@ function buildReportSheet_(ss) {
   [6, 10, 15].forEach(function (c) { sh.setColumnWidth(c, 24); });
   sh.setColumnWidth(11, 200);
   sh.setColumnWidth(16, 170);
+}
+
+// ===================== Công thức theo ngôn ngữ bảng tính =====================
+
+/**
+ * Bảng tính dùng dấu thập phân "," (vd tiếng Việt) thì công thức dùng ";" để ngăn đối số.
+ * Dò bằng cách ghi thử 1 công thức vào ô tạm.
+ */
+function formulaSeparator_(sh) {
+  var probe = sh.getRange(sh.getMaxRows(), sh.getMaxColumns());
+  try {
+    probe.setFormula('=SUM(1,2)');
+    SpreadsheetApp.flush();
+    var v = probe.getValue();
+    if (v === 3) return ',';
+    if (v !== '' && v !== null) return ';'; // #ERROR! -> bảng tính dùng ";"
+    return ',';
+  } catch (e) {
+    return ',';
+  } finally {
+    probe.clearContent();
+  }
+}
+
+/**
+ * Đổi công thức viết kiểu en-US sang kiểu dùng ";":
+ *   ","  ngăn đối số trong (...)  -> ";"
+ *   ","  ngăn cột trong mảng {...} -> "\"
+ * Không đụng tới chữ bên trong "..." (vd câu lệnh QUERY).
+ */
+function localizeFormula_(f, sep) {
+  if (sep !== ';') return f;
+  var out = '', inStr = false, stack = [];
+  for (var i = 0; i < f.length; i++) {
+    var ch = f.charAt(i);
+    if (ch === '"') { inStr = !inStr; out += ch; continue; }
+    if (!inStr) {
+      if (ch === '(' || ch === '{') stack.push(ch);
+      else if (ch === ')' || ch === '}') stack.pop();
+      else if (ch === ',') { out += stack[stack.length - 1] === '{' ? '\\' : ';'; continue; }
+    }
+    out += ch;
+  }
+  return out;
+}
+
+// ===================== Nâng cấp / dọn dẹp =====================
+
+/** Đổi cột cũ "Đang dùng" (tick = dùng) thành "Ngừng dùng" (tick = ẩn), đảo giá trị. */
+function migrateActiveColumn_(ss, name) {
+  var sh = ss.getSheetByName(name);
+  if (!sh || sh.getLastRow() < 1) return;
+  var lastCol = sh.getLastColumn();
+  if (lastCol < 1) return;
+  var header = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) { return String(h).trim().toLowerCase(); });
+  var oldCol = header.indexOf('đang dùng');
+  if (oldCol < 0 || header.indexOf('ngừng dùng') >= 0) return;
+  var lastRow = sh.getLastRow();
+  if (lastRow >= 2) {
+    var values = sh.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    var out = values.map(function (row) {
+      var hasData = row.some(function (v, c) { return c !== oldCol && v !== '' && v !== null && typeof v !== 'boolean'; });
+      if (!hasData) return [''];
+      var old = row[oldCol];
+      var active = old === '' || old === null || isChecked_(old);
+      return [!active];
+    });
+    var col = sh.getRange(2, oldCol + 1, lastRow - 1, 1);
+    col.clearDataValidations();
+    col.setValues(out);
+  }
+  sh.getRange(1, oldCol + 1).setValue('Ngừng dùng');
+}
+
+/** Xoá các tab "<tên>_conflict123" còn trống do chạy cài đặt 2 lần cùng lúc. */
+function removeEmptyConflictSheets_(ss) {
+  ss.getSheets().forEach(function (sh) {
+    var m = sh.getName().match(/^(.+)_conflict\d+$/);
+    if (m && SCHEMA[m[1]] && sh.getLastRow() <= 1) ss.deleteSheet(sh);
+  });
 }
 
 /** Tạo 2 phiếu mẫu (230/11 cuộn carton, 225/11 pallet chia bánh) để thử in. */

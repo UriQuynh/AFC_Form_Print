@@ -45,11 +45,21 @@ t('setupSheets chạy lại không nhân đôi dữ liệu', () => {
   assert.equal(readTable_('CauHinh').rows.length, DEFAULT_CONFIG.length);
 });
 
-t('BaoCao có công thức QUERY', () => {
+t('BaoCao có công thức QUERY với câu lệnh nằm trọn trong chuỗi', () => {
   const sh = gas.spreadsheet.getSheetByName('BaoCao');
   const f = sh.getRange('A5').getFormula();
   assert.match(f, /^=QUERY\(ChiTiet!A:/);
   assert.match(f, /group by C/);
+  for (const a1 of ['A5', 'G5', 'K5', 'P5']) {
+    const q = sh.getRange(a1).getFormula();
+    // QUERY(range,"select ... where X >= "&$D$2&" and X <= "&$D$3&" and ... ",1)
+    assert.match(q, /^=QUERY\([A-Za-z]+!A:[A-Z]+,"select [^"]+ where [A-Z]+ >= "&\$D\$2&" and [A-Z]+ <= "&\$D\$3&" and [^"]+",1\)$/, a1 + ': ' + q);
+    assert.equal((q.match(/"/g) || []).length % 2, 0, a1 + ' số dấu " lẻ');
+    // QUERY: cột trong "order by" phải có trong "select"
+    const sel = q.match(/select (.+?) where/)[1].split(', ').map((x) => x.trim());
+    const ord = q.match(/order by (.+?)(?: desc| asc)? label/)[1].trim();
+    assert.ok(sel.includes(ord), a1 + ': order by ' + ord + ' không có trong select');
+  }
   assert.match(sh.getRange('T5').getFormula(), /Lương/);
 });
 
@@ -183,6 +193,62 @@ t('đọc theo tên cột: đổi thứ tự cột trên sheet vẫn chạy', ()
   sh.data = sh.data.map((row) => { const r = row.slice(); const tmp = r[0]; r[0] = r[1]; r[1] = tmp; return r; });
   const md = getMasterData();
   assert.ok(md.products.some((p) => p.maSP === 'K76/450' && p.loaiGiay === 'GIẤY CARTON'));
+});
+
+t('localizeFormula_: đổi dấu ngăn cho bảng tính tiếng Việt, giữ nguyên chuỗi QUERY', () => {
+  assert.equal(localizeFormula_('=SUM(1,2)', ','), '=SUM(1,2)');
+  assert.equal(localizeFormula_('=IF(A1="",DATE(2000,1,1),A1)', ';'), '=IF(A1="";DATE(2000;1;1);A1)');
+  assert.equal(localizeFormula_('=QUERY(X!A:B,"select A, sum(B) group by A",1)', ';'), '=QUERY(X!A:B;"select A, sum(B) group by A";1)');
+  assert.equal(localizeFormula_('={"L";ARRAYFORMULA(VLOOKUP(P6:P,{D!A:A,D!E:E},2,0))}', ';'), '={"L";ARRAYFORMULA(VLOOKUP(P6:P;{D!A:A\\D!E:E};2;0))}');
+});
+
+t('setup trên bảng tính dùng ";" ghi công thức đúng kiểu', () => {
+  const g2 = createFakeGas({ formulaSep: ';' });
+  const saved = { ...globalThis };
+  g2.install(globalThis);
+  try {
+    setupSheets();
+    const sh = g2.spreadsheet.getSheetByName('BaoCao');
+    assert.match(sh.getRange('D2').getFormula(), /DATE\(2000;1;1\)/);
+    assert.match(sh.getRange('A5').getFormula(), /^=QUERY\(ChiTiet!A:AC;"select C, count/);
+    assert.match(sh.getRange('T5').getFormula(), /\{DM_TaiXe!A:A\\DM_TaiXe!E:E\};2;0/);
+  } finally {
+    gas.install(globalThis);
+    Object.keys(g2.env).forEach((k) => { globalThis[k] = saved[k]; });
+  }
+});
+
+t('dòng chỉ có checkbox không chặn ghi thêm: khách mới nằm ngay sau dòng dữ liệu cuối', () => {
+  const sh = gas.spreadsheet.getSheetByName('DM_KhachHang');
+  const col = colIndex_('DM_KhachHang', sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]).ngung + 1;
+  const lastData = Math.max(...readTable_('DM_KhachHang').rows.map((r) => r._row));
+  for (let r = 2; r <= 400; r++) if (sh.getRange(r, col).getValue() === '') sh.getRange(r, col).setValue(false);
+  assert.equal(sh.getLastRow(), 400);
+  savePhieu({ so: '240/11', ngay: '2026-11-16', khach: 'KHÁCH CHECKBOX', lines: [{ maSP: 'K76/450', kg: 500, ca: 'C1', may: 'M1' }] });
+  const hit = readTable_('DM_KhachHang').rows.find((r) => r.ten === 'KHÁCH CHECKBOX');
+  assert.equal(hit._row, lastData + 1);
+});
+
+t('tick "Ngừng dùng" -> ẩn khỏi dropdown', () => {
+  const t0 = readTable_('DM_Ca');
+  updateRow_(t0, t0.rows.find((r) => r.ma === 'C3')._row, { ngung: true });
+  assert.deepEqual(getMasterData().shifts.map((c) => c.ma), ['C1', 'C2']);
+});
+
+t('nâng cấp cột cũ "Đang dùng" -> "Ngừng dùng" + xoá tab _conflict trống', () => {
+  const sh = gas.spreadsheet.getSheetByName('DM_Kho');
+  const hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  const c = hdr.indexOf('Ngừng dùng') + 1;
+  sh.getRange(1, c).setValue('Đang dùng');
+  sh.getRange(2, c).setValue(true); sh.getRange(3, c).setValue(false); sh.getRange(4, c).setValue(true);
+  for (let r = 5; r <= 60; r++) sh.getRange(r, c).setValue(false);
+  gas.spreadsheet.insertSheet('DM_KhachHang_conflict35786537').getRange(1, 1).setValue('Tên đơn vị nhận hàng');
+  setupSheets();
+  const hdr2 = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  assert.ok(hdr2.includes('Ngừng dùng') && !hdr2.includes('Đang dùng'));
+  assert.deepEqual(getMasterData().warehouses.map((w) => w.ma), ['M1', 'M3']);
+  assert.equal(sh.getLastRow(), 4);
+  assert.equal(gas.spreadsheet.getSheetByName('DM_KhachHang_conflict35786537'), null);
 });
 
 console.log(`\n${passed} test đạt${process.exitCode ? ' — CÓ LỖI' : ''}`);

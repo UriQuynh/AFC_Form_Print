@@ -51,7 +51,8 @@ function readTable_(name) {
     var o = { _row: r + 1 };
     for (var k = 0; k < keys.length; k++) {
       var v = line[idx[keys[k]]];
-      if (v !== '' && v !== null) empty = false;
+      // ô checkbox (true/false) không tính là dữ liệu -> dòng chỉ có checkbox = dòng trống
+      if (v !== '' && v !== null && typeof v !== 'boolean') empty = false;
       o[keys[k]] = v;
     }
     if (!empty) rows.push(o);
@@ -74,7 +75,10 @@ function appendObjects_(name, objs) {
   if (!objs.length) return;
   var t = readTable_(name);
   var rows = objs.map(function (o) { return toRow_(t.header, t.idx, o); });
-  var start = Math.max(t.sheet.getLastRow(), 1) + 1;
+  // Ghi ngay sau dòng có dữ liệu cuối cùng (bỏ qua các dòng trống chỉ có checkbox)
+  var last = 1;
+  t.rows.forEach(function (r) { if (r._row > last) last = r._row; });
+  var start = last + 1;
   t.sheet.getRange(start, 1, rows.length, t.header.length).setValues(rows);
 }
 
@@ -158,12 +162,12 @@ function str_(v) {
   return String(v).trim();
 }
 
-function isActive_(v) {
-  if (v === '' || v === null || v === undefined) return true; // để trống = đang dùng
+/** Ô checkbox / ô đánh dấu: true, "TRUE", "x", "có", "1" -> true. Trống / FALSE -> false. */
+function isChecked_(v) {
   if (v === true) return true;
-  if (v === false) return false;
+  if (v === false || v === '' || v === null || v === undefined) return false;
   var s = String(v).trim().toLowerCase();
-  return !(s === 'false' || s === 'không' || s === 'khong' || s === 'no' || s === '0' || s === 'x');
+  return s === 'true' || s === 'x' || s === 'có' || s === 'co' || s === '1' || s === 'yes';
 }
 
 /** Bỏ _row và chuẩn hoá Date -> chuỗi để trả qua google.script.run. */

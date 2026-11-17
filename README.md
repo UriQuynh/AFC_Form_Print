@@ -33,7 +33,8 @@ Chạy menu **AFC Form → Cài đặt / cập nhật cấu trúc sheet** sẽ t
 Ghi chú:
 
 - Webapp đọc theo **tên cột** ở dòng 1, nên có thể đổi thứ tự cột hoặc thêm cột phụ. Không đổi tên cột.
-- Cột **Đang dùng** (checkbox) ở danh mục: bỏ tick để ẩn khỏi dropdown nhưng vẫn giữ lịch sử.
+- Cột **Ngừng dùng** (checkbox) ở danh mục: để trống = đang dùng; tick để ẩn khỏi dropdown nhưng vẫn giữ lịch sử. Dòng mới gõ trực tiếp trên sheet tự động là "đang dùng".
+- Công thức sheet `BaoCao` tự theo ngôn ngữ bảng tính (dấu `,` hoặc `;`), không cần sửa tay.
 - Sheet `PhieuXuat` / `ChiTiet` đã có dropdown (data validation) lấy từ danh mục, nên khi sửa trực tiếp trên sheet vẫn chọn được.
 - **Huỷ phiếu** không xoá dòng: trạng thái chuyển `Đã huỷ`, không tính vào báo cáo, số phiếu và mã cuộn được dùng lại.
 
@@ -84,7 +85,17 @@ cp .clasp.json.example .clasp.json   # sửa scriptId
 npm run push
 ```
 
-Sau đó làm tiếp bước 3–5 của Cách A. Mỗi lần cập nhật code: `npm run push` rồi **Triển khai → Quản lý triển khai → sửa → Phiên bản mới** (giữ nguyên URL).
+Sau đó làm tiếp bước 3–5 của Cách A. Mỗi lần cập nhật code, đẩy code rồi cập nhật bản triển khai hiện có (giữ nguyên URL web app):
+
+```bash
+npm run push
+```
+
+```bash
+clasp update-deployment <DEPLOYMENT_ID> --description "mô tả thay đổi"
+```
+
+`<DEPLOYMENT_ID>` xem bằng `clasp list-deployments` (dòng có `@<số phiên bản>`, không phải `@HEAD`). Sau khi đổi cấu trúc sheet trong code, chạy lại menu **AFC Form → Cài đặt / cập nhật cấu trúc sheet** (mất khoảng 1 phút, chỉ bấm 1 lần).
 
 ### Phân quyền
 

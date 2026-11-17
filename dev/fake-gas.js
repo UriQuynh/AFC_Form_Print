@@ -88,18 +88,25 @@
       return this;
     }
     setValue(x) { this.sh.set(this.r, this.c, x); return this; }
-    setFormula(f) { this.sh.formulas[`${this.r},${this.c}`] = f; this.sh.set(this.r, this.c, ''); return this; }
+    setFormula(f) {
+      this.sh.formulas[`${this.r},${this.c}`] = f;
+      // mô phỏng dò dấu ngăn đối số theo ngôn ngữ bảng tính
+      const val = f === '=SUM(1,2)' ? (this.sh.ss.formulaSep === ';' ? '#ERROR!' : 3) : '';
+      this.sh.set(this.r, this.c, val);
+      return this;
+    }
     getFormula() { return this.sh.formulas[`${this.r},${this.c}`] || ''; }
     offset(dr, dc, nr, nc) { return new Range(this.sh, this.r + dr, this.c + dc, nr || this.nr, nc || this.nc); }
-    clear() { for (let i = 0; i < this.nr; i++) for (let j = 0; j < this.nc; j++) this.sh.set(this.r + i, this.c + j, ''); return this; }
+    clear() { for (let i = 0; i < this.nr; i++) for (let j = 0; j < this.nc; j++) { this.sh.set(this.r + i, this.c + j, ''); delete this.sh.formulas[`${this.r + i},${this.c + j}`]; } return this; }
+    clearContent() { return this.clear(); }
   }
   ['setNumberFormat', 'setFontWeight', 'setBackground', 'setWrap', 'setVerticalAlignment', 'setFontSize', 'setFontColor',
-    'setDataValidation', 'insertCheckboxes', 'setHorizontalAlignment', 'setBorder'].forEach((k) => {
+    'setDataValidation', 'clearDataValidations', 'insertCheckboxes', 'setHorizontalAlignment', 'setBorder'].forEach((k) => {
     Range.prototype[k] = function () { return this; };
   });
 
   class Spreadsheet {
-    constructor() { this.sheets = []; this.nextId = 1; this.active = null; }
+    constructor(formulaSep) { this.sheets = []; this.nextId = 1; this.active = null; this.formulaSep = formulaSep || ','; }
     getId() { return 'FAKE_SPREADSHEET'; }
     getUrl() { return 'https://docs.google.com/spreadsheets/d/FAKE/edit'; }
     getSheetByName(n) { return this.sheets.find((s) => s.name === n) || null; }
@@ -108,6 +115,7 @@
       if (this.getSheetByName(n)) throw new Error('Sheet đã có: ' + n);
       const s = new Sheet(this, n, this.nextId++); this.sheets.push(s); return s;
     }
+    deleteSheet(s) { this.sheets.splice(this.sheets.indexOf(s), 1); }
     setActiveSheet(s) { this.active = s; return s; }
     getActiveSheet() { return this.active || this.sheets[0]; }
     moveActiveSheet(i) {
@@ -149,7 +157,7 @@
 
   function createFakeGas(opts) {
     opts = opts || {};
-    let ss = opts.spreadsheet || new Spreadsheet();
+    let ss = opts.spreadsheet || new Spreadsheet(opts.formulaSep);
     const props = {};
     const env = {
       SpreadsheetApp: {
@@ -158,6 +166,7 @@
         openById: () => ss,
         getActiveSheet: () => ss.getActiveSheet(),
         getUi: () => { throw new Error('No UI in fake'); },
+        flush: () => {},
         newDataValidation: () => chain('DataValidation'),
       },
       Utilities: { formatDate, getUuid: uuid },

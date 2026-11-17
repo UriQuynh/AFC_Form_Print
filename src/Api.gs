@@ -19,7 +19,7 @@ function getConfig_() {
 
 function listActive_(name) {
   return readTable_(name).rows
-    .filter(function (r) { return isActive_(r.active); })
+    .filter(function (r) { return !isChecked_(r.ngung); })
     .map(clean_);
 }
 
@@ -339,7 +339,6 @@ function autoAddMaster_(h) {
     if (!exists) {
       var o = extra || {};
       o[key] = value;
-      o.active = true;
       appendObjects_(name, [o]);
     }
   };

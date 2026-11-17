@@ -33,7 +33,7 @@ var SCHEMA = {
       ['donVi', 'Đơn vị (CUỘN/PALLET)'],
       ['truBi', 'Trừ bì (kg/đơn vị)'],
       ['ghiChu', 'Ghi chú'],
-      ['active', 'Đang dùng'],
+      ['ngung', 'Ngừng dùng'],
     ],
   },
   DM_KhachHang: {
@@ -45,7 +45,7 @@ var SCHEMA = {
       ['lienHe', 'Người liên hệ'],
       ['sdt', 'SĐT'],
       ['ghiChu', 'Ghi chú'],
-      ['active', 'Đang dùng'],
+      ['ngung', 'Ngừng dùng'],
     ],
   },
   DM_TaiXe: {
@@ -59,7 +59,7 @@ var SCHEMA = {
       ['donGiaChuyen', 'Đơn giá/chuyến (đ)'],
       ['donGiaTan', 'Đơn giá/tấn (đ)'],
       ['ghiChu', 'Ghi chú'],
-      ['active', 'Đang dùng'],
+      ['ngung', 'Ngừng dùng'],
     ],
   },
   DM_Xe: {
@@ -72,7 +72,7 @@ var SCHEMA = {
       ['soHuu', 'Sở hữu (Công ty/Thuê ngoài)'],
       ['taiXeMacDinh', 'Tài xế mặc định'],
       ['ghiChu', 'Ghi chú'],
-      ['active', 'Đang dùng'],
+      ['ngung', 'Ngừng dùng'],
     ],
   },
   DM_Kho: {
@@ -81,7 +81,7 @@ var SCHEMA = {
     cols: [
       ['ma', 'Mã kho / máy'],
       ['ten', 'Mô tả'],
-      ['active', 'Đang dùng'],
+      ['ngung', 'Ngừng dùng'],
     ],
   },
   DM_Ca: {
@@ -90,7 +90,7 @@ var SCHEMA = {
     cols: [
       ['ma', 'Mã ca'],
       ['ten', 'Mô tả'],
-      ['active', 'Đang dùng'],
+      ['ngung', 'Ngừng dùng'],
     ],
   },
   DM_NhanVien: {
@@ -100,7 +100,7 @@ var SCHEMA = {
       ['ten', 'Họ tên'],
       ['boPhan', 'Bộ phận'],
       ['vaiTro', 'Vai trò (Lập phiếu/Thủ kho/KCS)'],
-      ['active', 'Đang dùng'],
+      ['ngung', 'Ngừng dùng'],
     ],
   },
 
