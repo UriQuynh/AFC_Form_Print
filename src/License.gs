@@ -17,7 +17,7 @@
 
 var LICENSE = {
   // Khoá công khai Ed25519 (hex, 64 ký tự). Điền bằng: node tools/license-key.mjs init
-  PUBKEY: '',
+  PUBKEY: '51461f922a581d47d995198f6c7393c544a32346710a4322f8eb1e5a8b553701',
   PREFIX: 'AFC-LICENSE-V1:',
   CONTACT: 'SOLVIQ',
   P_SSID: 'LICENSE_SSID',
