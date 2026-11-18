@@ -213,6 +213,20 @@ npm run render       # xuất video/out/huong-dan-phieu-xuat-kho-thuyet-minh.mp4
 
 **Giọng đọc thuyết minh**: dùng giọng tiếng Việt **Linh** có sẵn của macOS (chạy cục bộ, không gửi chữ ra ngoài). Lời đọc nằm trong [`video/src/narration.json`](video/src/narration.json), mỗi cảnh một danh sách đoạn, **số đoạn phải bằng số đoạn subtext** của cảnh đó. Viết sẵn dạng đọc được (vd "PXK" → "pê xê ca", "KCS" → "ca xê ét", "web app" → "oép áp"). Sửa lời rồi chạy `npm run narrate`; chỉ đoạn nào đổi chữ mới được đọc lại. Đổi giọng hoặc tốc độ: `VOICE=Linh RATE=190 npm run narrate` (`say -v '?'` liệt kê giọng). Các file `video/public/audio/*.mp3` đã được commit nên máy không có macOS vẫn render được. Độ dài từng cảnh tự giãn theo lời, chú thích và camera dời theo.
 
+**Bản rút gọn (< 2 phút, ~1:20)** dùng giọng ElevenLabs: lời ở [`video/src/narration.short.json`](video/src/narration.short.json) (viết tên riêng nguyên gốc: "Google Sheets", "KCS"…), danh sách cảnh và đoạn giữ lại ở `SHORT_ENTRIES` trong [`video/src/Tutorial.tsx`](video/src/Tutorial.tsx). Đặt khoá API vào `video/.env` (đã `.gitignore`, **không commit**):
+
+```
+ELEVENLABS_API_KEY=sk_...
+```
+
+```bash
+cd video
+npm run narrate:short   # tạo lời bằng ElevenLabs (mặc định model eleven_v3, giọng 21m00Tcm4TlvDq8ikWAM)
+npm run render:short    # xuất video/out/huong-dan-phieu-xuat-kho-ngan.mp4
+```
+
+Đổi giọng: `EL_VOICE=<voice_id> EL_MODEL=eleven_v3 npm run narrate:short`. Có `ELEVENLABS_API_KEY` thì `npm run narrate` (bản đầy đủ) cũng tự dùng ElevenLabs; muốn dùng giọng macOS thì thêm `PROVIDER=say`. Các file `video/public/audio-short/*.mp3` được commit nên không cần khoá để render lại.
+
 - Kịch bản (mốc thời gian, chú thích, subtext) nằm trong [`video/src/data.ts`](video/src/data.ts) và [`video/src/scenes/Custom.tsx`](video/src/scenes/Custom.tsx). Sửa chữ hay thời lượng ở đó rồi render lại.
 - Ảnh nền ở `video/public/shots/`. Ảnh web app và mẫu in chụp lại bằng `node tools/capture-shots.mjs` (từ bản preview, không cần Google). Ảnh các tab Google Sheet là ảnh chụp thật; khi giao diện sheet đổi, chụp lại và thay file `sheet-*.jpg`.
 - Remotion tải Chrome riêng lần đầu chạy. Nếu máy đã có sẵn `chrome-headless-shell`, thêm `--browser-executable=<đường dẫn>` vào lệnh render.

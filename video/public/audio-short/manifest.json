@@ -1,0 +1,119 @@
+{
+  "intro": [
+    {
+      "file": "audio-short/intro-0.mp3",
+      "seconds": 2.32,
+      "hash": "353af27091d4"
+    }
+  ],
+  "overview": [
+    {
+      "file": "audio-short/overview-0.mp3",
+      "seconds": 3.92,
+      "hash": "3f0790f9e789"
+    },
+    {
+      "file": "audio-short/overview-1.mp3",
+      "seconds": 1.44,
+      "hash": "6fd1fa0e2f91"
+    }
+  ],
+  "tour": [
+    {
+      "file": "audio-short/tour-0.mp3",
+      "seconds": 5.12,
+      "hash": "4b5fd8e43ebc"
+    },
+    {
+      "file": "audio-short/tour-1.mp3",
+      "seconds": 2.4,
+      "hash": "07ec39beb707"
+    }
+  ],
+  "steps": [
+    {
+      "file": "audio-short/steps-0.mp3",
+      "seconds": 1.6,
+      "hash": "593f21a9cbef"
+    },
+    {
+      "file": "audio-short/steps-1.mp3",
+      "seconds": 3.04,
+      "hash": "bd865f8ae0d1"
+    },
+    {
+      "file": "audio-short/steps-2.mp3",
+      "seconds": 3.68,
+      "hash": "762c50b548a8"
+    },
+    {
+      "file": "audio-short/steps-3.mp3",
+      "seconds": 3.84,
+      "hash": "49449ba10361"
+    }
+  ],
+  "print-a4": [
+    {
+      "file": "audio-short/print-a4-0.mp3",
+      "seconds": 1.6,
+      "hash": "13741e4258c5"
+    },
+    {
+      "file": "audio-short/print-a4-1.mp3",
+      "seconds": 3.28,
+      "hash": "a48258cbf0b5"
+    }
+  ],
+  "phieuxuat": [
+    {
+      "file": "audio-short/phieuxuat-0.mp3",
+      "seconds": 3.76,
+      "hash": "2cca2f64b34b"
+    }
+  ],
+  "chitiet": [
+    {
+      "file": "audio-short/chitiet-0.mp3",
+      "seconds": 4,
+      "hash": "ad97a4afa4f2"
+    }
+  ],
+  "dm-grid": [
+    {
+      "file": "audio-short/dm-grid-0.mp3",
+      "seconds": 2.96,
+      "hash": "187cfccafd64"
+    }
+  ],
+  "baocao": [
+    {
+      "file": "audio-short/baocao-0.mp3",
+      "seconds": 2.88,
+      "hash": "35c1259d933e"
+    },
+    {
+      "file": "audio-short/baocao-1.mp3",
+      "seconds": 1.68,
+      "hash": "82a04218692d"
+    }
+  ],
+  "web-form": [
+    {
+      "file": "audio-short/web-form-0.mp3",
+      "seconds": 3.2,
+      "hash": "a1bb188e85d5"
+    },
+    {
+      "file": "audio-short/web-form-1.mp3",
+      "seconds": 2.16,
+      "hash": "6fc00eb4fde1"
+    }
+  ],
+  "outro": [
+    {
+      "file": "audio-short/outro-0.mp3",
+      "seconds": 4.72,
+      "hash": "a2656299f5eb"
+    }
+  ]
+}

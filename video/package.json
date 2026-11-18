@@ -7,7 +7,9 @@
     "dev": "remotion studio",
     "typecheck": "tsc --noEmit",
     "render": "remotion render src/index.ts Tutorial out/huong-dan-phieu-xuat-kho-thuyet-minh.mp4 --audio-codec=aac",
-    "narrate": "node scripts/narrate.mjs"
+    "narrate": "node scripts/narrate.mjs",
+    "narrate:short": "NARRATION=short node scripts/narrate.mjs",
+    "render:short": "remotion render src/index.ts TutorialShort out/huong-dan-phieu-xuat-kho-ngan.mp4 --audio-codec=aac"
   },
   "dependencies": {
     "@remotion/cli": "4.0.540",

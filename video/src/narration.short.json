@@ -1,0 +1,33 @@
+{
+  "intro": ["Hướng dẫn lập phiếu xuất kho Giấy AFC."],
+  "overview": [
+    "Google Sheets có ba nhóm tab: nhập liệu, dữ liệu, danh mục.",
+    "Nhân viên chỉ dùng nhóm nhập liệu."
+  ],
+  "tour": [
+    "Sheet Nhập PXK có ba nút: In phiếu, Phiếu mới, Mở phiếu.",
+    "Ô vàng để nhập, ô tím tự tính."
+  ],
+  "steps": [
+    "Một: bấm Phiếu mới.",
+    "Hai: chọn khách và xe, tài xế tự điền.",
+    "Ba: nhập số kg, mã sản phẩm tự theo dòng trên.",
+    "Bốn: bấm In phiếu, phiếu được lưu và mở trang in."
+  ],
+  "print-a4": [
+    "Phiếu in đúng mẫu A4.",
+    "Quét mã QR để mở tem KCS và COA."
+  ],
+  "phieuxuat": ["Sheet PhieuXuat: mỗi dòng là một phiếu, một chuyến xe."],
+  "chitiet": ["Sheet ChiTiet: mỗi dòng là một cuộn, dữ liệu cho báo cáo."],
+  "dm-grid": ["Sheet danh mục: gõ vào dòng trống để thêm lựa chọn."],
+  "baocao": [
+    "Sheet BaoCao: chọn ngày, sản lượng tự cập nhật.",
+    "Có cả chuyến và lương tài xế."
+  ],
+  "web-form": [
+    "Web app lập phiếu trên điện thoại, cùng một Google Sheet.",
+    "Lưu xong in phiếu, tem và biên bản."
+  ],
+  "outro": ["Lập phiếu, chọn danh mục, báo cáo tự tính. Cảm ơn quý vị."]
+}

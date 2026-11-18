@@ -14,7 +14,7 @@ fs.mkdirSync(outDir, { recursive: true });
 
 const serveUrl = await bundle({ entryPoint: path.join(root, "src/index.ts"), publicDir: path.join(root, "public") });
 const browserExecutable = fs.existsSync(SHELL) ? SHELL : undefined;
-const comp = await selectComposition({ serveUrl, id: "Tutorial", browserExecutable });
+const comp = await selectComposition({ serveUrl, id: process.env.COMP || "Tutorial", browserExecutable });
 console.log(`Tổng ${comp.durationInFrames} khung (${(comp.durationInFrames / comp.fps).toFixed(1)}s)`);
 for (const f of frames) {
   const output = path.join(outDir, `f${String(f).padStart(4, "0")}.png`);

@@ -6,3 +6,7 @@ preview/
 *.log
 video/out/
 video/node_modules/
+
+# khoá API (không commit)
+.env
+video/.env
