@@ -10,6 +10,10 @@
  */
 
 function doGet(e) {
+  var lic = licenseStatus_();
+  if (!lic.ok) {
+    return HtmlService.createHtmlOutput(licensePageHtml_(lic)).setTitle('Bản sao chưa được cấp phép');
+  }
   var params = (e && e.parameter) || {};
   var page = String(params.page || 'form').toLowerCase();
   rememberWebAppUrl_();
@@ -46,21 +50,31 @@ function include(name) {
 // ===================== Menu trên Google Sheet =====================
 
 function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('AFC Form')
-    .addItem('Nhập PXK: In phiếu (lưu + in)', 'pxkPrint')
-    .addItem('Nhập PXK: Phiếu mới', 'pxkNew')
-    .addItem('Nhập PXK: Mở phiếu theo số', 'pxkLoad')
-    .addSeparator()
-    .addItem('Mở form nhập liệu (web app)', 'menuOpenForm_')
-    .addItem('In phiếu đang chọn (dòng ở sheet PhieuXuat)', 'menuPrintSelected_')
-    .addSeparator()
-    .addItem('Cài đặt / cập nhật cấu trúc sheet', 'setupSheets')
-    .addItem('Thêm dữ liệu mẫu (demo)', 'seedDemoData')
-    .addToUi();
+  var ui = SpreadsheetApp.getUi();
+  var menu = ui.createMenu('AFC Form');
+  // Chưa cấp phép (bản sao): chỉ còn menu Bản quyền. code 'error' (simple trigger không đọc được
+  // Properties) thì vẫn dựng menu đủ — mọi thao tác ghi đều kiểm lại bản quyền khi chạy.
+  var lic = licenseStatus_();
+  if (lic.ok || lic.code === 'error') {
+    menu
+      .addItem('Nhập PXK: In phiếu (lưu + in)', 'pxkPrint')
+      .addItem('Nhập PXK: Phiếu mới', 'pxkNew')
+      .addItem('Nhập PXK: Mở phiếu theo số', 'pxkLoad')
+      .addSeparator()
+      .addItem('Mở form nhập liệu (web app)', 'menuOpenForm_')
+      .addItem('In phiếu đang chọn (dòng ở sheet PhieuXuat)', 'menuPrintSelected_')
+      .addSeparator()
+      .addItem('Cài đặt / cập nhật cấu trúc sheet', 'setupSheets')
+      .addItem('Thêm dữ liệu mẫu (demo)', 'seedDemoData')
+      .addSeparator();
+  } else {
+    try { SpreadsheetApp.getActive().toast('Bản sao chưa được cấp phép. Vào AFC Form → Bản quyền để kích hoạt, hoặc liên hệ ' + LICENSE.CONTACT + '.', 'AFC Form', 15); } catch (e) { /* không có toast */ }
+  }
+  menu.addSubMenu(licenseSubMenu_(ui)).addToUi();
 }
 
 function menuOpenForm_() {
+  if (!licenseGuardUi_()) return;
   var url = webAppUrl_();
   if (!url) {
     SpreadsheetApp.getUi().alert('Chưa deploy web app. Vào Tiện ích mở rộng → Apps Script → Triển khai → Tùy chọn triển khai mới → Ứng dụng web.');
@@ -70,6 +84,7 @@ function menuOpenForm_() {
 }
 
 function menuPrintSelected_() {
+  if (!licenseGuardUi_()) return;
   var sh = SpreadsheetApp.getActiveSheet();
   var ui = SpreadsheetApp.getUi();
   if (sh.getName() !== 'PhieuXuat' && sh.getName() !== 'ChiTiet') {

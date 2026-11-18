@@ -135,7 +135,87 @@ Nút bấm chỉ chạy trên trình duyệt máy tính; cùng các lệnh có �
 
 Form tự lưu **bản nháp** trên máy (mất mạng / lỡ tắt tab vẫn khôi phục được). `Ctrl/⌘ + S` để lưu.
 
-## 5. Phát triển
+## 5. Bản quyền / chống sao chép
+
+> **Sự thật cần nói trước:** Google **không có cách chặn tuyệt đối** việc sao chép Apps Script. Người có quyền **Editor** trên Sheet đọc được toàn bộ mã và có thể xoá đoạn kiểm tra. Khoá bản quyền này là **rào cản thực tế**: bản sao (*File → Make a copy*) và bản clone mã sang dự án khác sẽ chạy ra **"chưa được cấp phép"** — không ghi được dữ liệu, web app không mở được, kèm thông báo liên hệ SOLVIQ. Không hơn.
+
+### 5.1 Cách hoạt động
+
+- **SOLVIQ giữ khoá riêng Ed25519** (ngoài repo). **Mã kích hoạt** của một bảng tính = chữ ký Ed25519 trên `AFC-LICENSE-V1:<ID bảng tính>` (ID là đoạn giữa `/d/` và `/edit` trong URL Sheet). Mã chỉ đúng cho **đúng ID đó**.
+- Trong `src/License.gs` chỉ có **khoá công khai**: đủ để *kiểm* chữ ký, không đủ để *tạo* mã. Kho mã nguồn không chứa bí mật nào.
+- **Kích hoạt** (menu **AFC Form → Bản quyền → Kích hoạt bản quyền**): hỏi xác nhận → nhập mã → mã đúng thì ghi `LICENSE_SSID`, `LICENSE_CODE`, `LICENSE_AT`, `LICENSE_BY` vào **Script Properties** (Cài đặt dự án → Thuộc tính tập lệnh).
+- Mỗi lần chạy, code kiểm lại: `LICENSE_SSID` phải **trùng ID bảng tính đang chạy** *và* chữ ký trong `LICENSE_CODE` phải hợp lệ cho ID đó. Tự gõ `LICENSE_SSID` bằng tay không đủ — vẫn cần mã SOLVIQ ký.
+- **Chưa cấp phép thì:**
+  - `savePhieu`, `cancelPhieu`, `exportDriverReport`, `setupSheets`, `seedDemoData`, `pxkSave_`/IN PHIẾU và mọi ghi xuống sheet (`appendObjects_`, `updateRow_`, `deleteRows_`) ném lỗi tiếng Việt; `getMasterData`, `getPhieu`, `listPhieu`, `getReport`, `getNextSoPhieu` cũng bị chặn.
+  - `doGet` trả trang **"Bản sao chưa được cấp phép"** (không có dữ liệu, không có form).
+  - Menu **AFC Form** chỉ còn **Bản quyền** (+ một thông báo ngắn); nút trên sheet `Nhập PXK` báo "chưa được cấp phép"; `onEdit` không tự điền.
+- **Gỡ kích hoạt** (chỉ chủ sở hữu bảng tính): xoá 4 thuộc tính trên — dùng khi bàn giao / chuyển bảng tính.
+- Chi phí: kiểm chữ ký bằng BigInt ~ vài chục ms mỗi lần gọi (kết quả được nhớ trong 1 lần chạy).
+
+### 5.2 Vì sao chữ ký Ed25519 (và các phương án đã cân nhắc)
+
+Phía Apps Script **không được chứa bí mật**, nên không thể tự kiểm HMAC với khoá bí mật.
+
+| Phương án | Ưu | Nhược |
+|---|---|---|
+| (a) Nhúng sẵn `SHA-256(ID + ':' + mã)` cho từng khách vào `License.gs` | Đơn giản, ngắn gọn | Mỗi khách / mỗi lần chuyển sheet phải **sửa và đẩy lại mã**; danh sách hash nằm trong mã |
+| **(b) Chữ ký Ed25519 — ĐÃ CHỌN** | Mã nguồn **giống nhau cho mọi khách**; cấp mã mới = chạy 1 lệnh, **không đụng mã**; kho mã không có bí mật; không brute-force được | Mã dài (~104 ký tự, dán vào hộp thoại); phải tự cài bước kiểm chữ ký (~80 dòng BigInt trong `License.gs`, đã đối chiếu test với `crypto` của Node) |
+| (c) Hỏi máy chủ SOLVIQ mỗi lần chạy | Thu hồi được từ xa | Cần `UrlFetchApp` → phải **mở rộng `oauthScopes`** + dựng máy chủ + phụ thuộc mạng. Không làm |
+
+### 5.3 Thiết lập khoá (SOLVIQ làm 1 lần)
+
+```bash
+node tools/license-key.mjs init
+```
+
+Sinh cặp khoá, lưu **khoá riêng** vào `~/.solviq/afc-license-private.pem` (quyền 600; đổi chỗ bằng `AFC_LICENSE_KEY_FILE`, hoặc đưa nội dung PEM qua `AFC_LICENSE_PRIVATE_KEY`) và ghi **khoá công khai** vào dòng `PUBKEY` của `src/License.gs`. **Sao lưu file khoá riêng ở nơi an toàn, không commit** (`.gitignore` đã chặn `*.pem`). Mất khoá riêng = không cấp mã mới được; đổi khoá = mọi mã đã cấp mất hiệu lực. Commit `src/License.gs` sau khi `init`.
+
+> Khi `PUBKEY` còn trống (chưa chạy `init`), bản mã tự **khoá hết** và báo "chưa được cấu hình khoá bản quyền" — chủ ý, để không lỡ giao bản không có khoá.
+
+### 5.4 Kích hoạt cho khách / bảng tính mới
+
+1. Lấy **ID bảng tính** từ URL Sheet của khách.
+2. SOLVIQ cấp mã: `node tools/license-key.mjs <ID>` → in ra mã dạng `ABCD-EFGH-…`. (Kiểm lại: `node tools/license-key.mjs verify <ID> <mã>`.)
+3. Dán mã nguồn vào dự án Apps Script gắn với Sheet (Cách A/B ở mục 3).
+4. Mở Sheet → menu **AFC Form → Bản quyền → Kích hoạt bản quyền** → xác nhận → dán mã. Menu đầy đủ hiện ra.
+5. Sau đó mới **Cài đặt / cập nhật cấu trúc sheet** (lệnh này cũng cần cấp phép).
+
+**Sheet AFC đang chạy:** sau khi đẩy bản có khoá, sheet sẽ bị khoá đến khi kích hoạt. Thứ tự an toàn: `init` → cấp mã cho ID Sheet AFC → `clasp push` → mở Sheet, **Kích hoạt** ngay → tải lại trang. Triển khai web app lại (phiên bản mới) để `doGet` dùng mã mới.
+
+### 5.5 Chuyển sheet / bản sao hợp lệ
+
+Khi khách xin bản sao hợp lệ (đổi Sheet, nhân bản sang chi nhánh…): họ gửi **ID bảng tính mới** → SOLVIQ cấp mã mới cho ID đó (bước 2 ở trên) → họ dán vào menu Kích hoạt trên bản sao. **Không phải đổi mã nguồn.** Bảng tính cũ có thể **Gỡ kích hoạt** nếu thôi dùng.
+
+### 5.6 Giới hạn còn lại (đừng hứa hơn)
+
+- **Editor đọc được mã** (Tiện ích mở rộng → Apps Script) và có thể xoá `requireLicense_()`, sửa `licenseStatus_()` thành luôn `ok`, hoặc thay `PUBKEY` bằng khoá của họ rồi tự ký. Khoá này chặn người sao chép *thông thường*, không chặn người có kỹ năng và có quyền Editor.
+- **Dữ liệu** trong Sheet vẫn sao chép được (chỉ *chức năng* của mã bị khoá).
+- Mã kích hoạt nằm trong Script Properties — Editor của bảng tính gốc đọc được; nhưng mã chỉ đúng cho **ID gốc**, không kích hoạt được bảng tính khác.
+- **Script Properties có được sao chép khi *Make a copy* không?** Tài liệu Google không nói rõ (đã tìm, không có nguồn xác nhận). Thiết kế **không phụ thuộc** vào điều đó: nếu thuộc tính không được sao chép → bản sao trống → bị chặn; nếu được sao chép → `LICENSE_SSID` lệch ID mới → bị chặn (có test cho cả hai). Nên **tự kiểm bằng 1 bản sao thử** trước khi giao.
+- `onOpen`/`onEdit` là *simple trigger*. Chúng chỉ cần `PropertiesService` (không cần thêm quyền). Nếu môi trường nào đó không cho đọc Properties trong trigger (trạng thái `error`), menu / tự điền vẫn hiện đầy đủ — nhưng **mọi thao tác ghi vẫn kiểm lại** khi chạy, nên không thành lỗ hổng ghi dữ liệu.
+- Không có thu hồi từ xa: mã đã cấp đúng ID là dùng được mãi (trừ khi đổi khoá, làm mất hiệu lực tất cả).
+- Liên hệ hiển thị là `LICENSE.CONTACT` (hiện là `SOLVIQ`) trong `src/License.gs` — sửa thành email / SĐT thật của SOLVIQ trước khi giao.
+
+### 5.7 Biện pháp phụ (làm tay trên Google Drive, không đụng `oauthScopes`)
+
+Mở Sheet → **Chia sẻ** → biểu tượng **bánh răng ⚙ (Cài đặt)** ở góc trên bên phải hộp thoại:
+
+1. **Bỏ tick "Người xem và người nhận xét có thể xem tuỳ chọn tải xuống, in và sao chép"** — Viewer/Commenter không còn *Make a copy / Tải xuống / In*. Viewer vốn không thấy mã Apps Script.
+2. **Bỏ tick "Biên tập viên có thể thay đổi quyền và chia sẻ"** — chỉ chủ sở hữu mới mời thêm người / đổi quyền.
+3. **Chia sẻ nhân viên ở quyền Người xem** khi họ chỉ cần xem/in lại; chỉ cấp **Biên tập viên** cho người thật sự nhập liệu (Editor vẫn *Make a copy* và đọc mã được — hai tuỳ chọn trên không chặn Editor).
+4. Cấp quyền cho từng email, tránh "Bất kỳ ai có đường liên kết".
+
+*Tuỳ chọn nâng cao (không bật mặc định):* có thể viết thêm hàm `lockSharing()` dùng **Drive nâng cao** để đặt hai cờ trên bằng mã — việc đó cần **mở rộng `oauthScopes` sang `drive`**, nên **không** thêm vào `src/appsscript.json`; chỉ làm khi SOLVIQ chấp nhận quyền rộng hơn.
+
+*Hướng nâng cao:* giữ mã ở **dự án / web app riêng của SOLVIQ** (chạy "Execute as: Me") để khách không có mã trong Sheet của họ. Đổi lại kiến trúc thay đổi lớn (dữ liệu đi qua tài khoản SOLVIQ, cần ủy quyền truy cập Sheet khách). **Thư viện Apps Script** không che được mã với người được cấp quyền dùng thư viện (người dùng thư viện cần ít nhất quyền xem dự án thư viện — hãy kiểm tra tài liệu Google hiện hành trước khi dựa vào). Cả hai là hướng dài hạn, chưa làm trong repo này.
+
+### 5.8 Phát triển & test
+
+- `npm test` có nhóm test **Bản quyền** (49 test tổng): Ed25519 trong `License.gs` khớp `crypto` của Node (kể cả chữ ký giả / dẻo), chưa kích hoạt bị chặn, mã sai / mã của ID khác bị từ chối, bản sao & clone (properties trống hoặc sao nguyên) bị chặn và không ghi ô nào, menu chỉ còn **Bản quyền**, kích hoạt bằng menu, gỡ kích hoạt chỉ chủ sở hữu.
+- Test dùng **cặp khoá riêng của test** (`LICENSE.PUBKEY` bị thay trong bộ nhớ) — không đụng khoá thật.
+- Bản **preview / E2E** (`dev/preview-runtime.js`) ghi đè `licenseStatus_` thành "đã cấp phép" vì chạy trên dữ liệu giả lập — mã đó **không** nằm trong `src/` nên không được đẩy lên Google.
+
+## 6. Phát triển
 
 ```
 src/                 # Mã nguồn Apps Script (đẩy lên bằng clasp, rootDir = src)
@@ -143,6 +223,7 @@ src/                 # Mã nguồn Apps Script (đẩy lên bằng clasp, rootDi
   Db.gs              #   đọc/ghi sheet theo tên cột
   Api.gs             #   API cho webapp: danh mục, lưu/sửa/huỷ phiếu, số phiếu, mã cuộn, báo cáo
   Setup.gs           #   tạo sheet, dropdown, sheet BaoCao, dữ liệu mẫu
+  License.gs         #   khoá bản quyền: kiểm chữ ký Ed25519, kích hoạt/gỡ, chặn ghi ở bản sao
   Code.gs            #   doGet (định tuyến trang), menu trên Sheet
   Pxk.gs             #   sheet "Nhập PXK": dựng sheet, nút IN PHIẾU / PHIẾU MỚI / MỞ PHIẾU, onEdit tự điền
   PxkButtons.gs      #   ảnh nút bấm (sinh bằng tools/make-buttons.py)
@@ -153,6 +234,7 @@ src/                 # Mã nguồn Apps Script (đẩy lên bằng clasp, rootDi
 dev/fake-gas.js      # giả lập SpreadsheetApp/Utilities… để chạy src/*.gs ngoài Google
 dev/preview-runtime.js
 tools/test.mjs       # test logic server (Node)
+tools/license-key.mjs    # SOLVIQ: sinh khoá / cấp mã kích hoạt theo ID bảng tính (mục 5)
 tools/e2e.mjs        # test giao diện E2E (Chrome headless qua puppeteer-core)
 tools/make-buttons.py    # vẽ lại ảnh nút bấm cho sheet Nhập PXK
 tools/build-preview.mjs  # dựng bản xem trước offline vào preview/
@@ -163,7 +245,7 @@ npm install            # lần đầu: cài puppeteer-core (dùng Chrome có s�
 ```
 
 ```bash
-npm test               # 34 test logic server (src/*.gs) trên sheet giả lập
+npm test               # 49 test logic server (gồm bản quyền) (src/*.gs) trên sheet giả lập
 ```
 
 ```bash
@@ -191,7 +273,7 @@ URL trang khi đã deploy:
 | Biên bản giao nhận | `<exec>?page=bienban&px=<ID>` |
 | Tem KCS + COA | `<exec>?page=tem&px=<ID>[&cuon=<mã cuộn>][&loai=kcs\|coa]` |
 
-## 6. Video hướng dẫn thao tác (Remotion)
+## 7. Video hướng dẫn thao tác (Remotion)
 
 Thư mục [`video/`](video/) chứa mã nguồn video hướng dẫn các cửa sổ (tab) của Google Sheet và web app, có subtext giải thích từng cửa sổ dùng để làm gì (~3 phút, 1920×1080, 30fps).
 

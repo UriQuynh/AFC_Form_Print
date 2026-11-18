@@ -22,6 +22,7 @@ var SEED = {
 };
 
 function setupSheets() {
+  requireLicenseUi_();
   // Chặn 2 lần chạy song song (vd bấm menu 2 lần) -> tránh tạo sheet "..._conflict"
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(1000)) {
@@ -351,6 +352,7 @@ function removeEmptyConflictSheets_(ss) {
 
 /** Tạo 2 phiếu mẫu (230/11 cuộn carton, 225/11 pallet chia bánh) để thử in. */
 function seedDemoData() {
+  requireLicenseUi_();
   var demo = [
     {
       so: '230/11', ngay: '2026-11-14', khach: 'PHƯỚC HIỆP THÀNH', kho: 'M2', xe: '50LD-200.94',

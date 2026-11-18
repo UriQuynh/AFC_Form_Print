@@ -5,6 +5,9 @@
   var gas = FakeGas.createFakeGas({ email: 'demo@preview' });
   gas.install(window);
 
+  // Bản preview chạy trên dữ liệu giả lập trong trình duyệt: coi như đã cấp phép (không có khoá/chữ ký thật).
+  window.licenseStatus_ = function () { return { ok: true, code: 'ok', reason: 'Preview', ssid: 'PREVIEW' }; };
+
   var saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) { saved = null; }
   if (saved) {

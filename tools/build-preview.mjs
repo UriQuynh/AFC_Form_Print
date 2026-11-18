@@ -11,7 +11,7 @@ const src = (f) => fs.readFileSync(path.join(root, 'src', f), 'utf8');
 const out = path.join(root, 'preview');
 fs.mkdirSync(out, { recursive: true });
 
-const GS = ['Config.gs', 'Db.gs', 'Api.gs', 'Setup.gs', 'Code.gs', 'Pxk.gs', 'PxkButtons.gs'];
+const GS = ['Config.gs', 'Db.gs', 'Api.gs', 'Setup.gs', 'License.gs', 'Code.gs', 'Pxk.gs', 'PxkButtons.gs'];
 const gsCode = GS.map((f) => `// ---- src/${f} ----\n${src(f)}`).join('\n');
 const fake = fs.readFileSync(path.join(root, 'dev/fake-gas.js'), 'utf8');
 const runtime = fs.readFileSync(path.join(root, 'dev/preview-runtime.js'), 'utf8');

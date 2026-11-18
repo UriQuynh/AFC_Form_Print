@@ -72,6 +72,7 @@ function toRow_(header, idx, obj) {
 
 /** Ghi thêm nhiều dòng cuối sheet. */
 function appendObjects_(name, objs) {
+  requireLicense_();
   if (!objs.length) return;
   var t = readTable_(name);
   var rows = objs.map(function (o) { return toRow_(t.header, t.idx, o); });
@@ -84,6 +85,7 @@ function appendObjects_(name, objs) {
 
 /** Ghi đè một dòng (giữ nguyên các cột không có trong obj). */
 function updateRow_(t, rowNum, obj) {
+  requireLicense_();
   var range = t.sheet.getRange(rowNum, 1, 1, t.header.length);
   var cur = range.getValues()[0];
   Object.keys(t.idx).forEach(function (k) {
@@ -94,6 +96,7 @@ function updateRow_(t, rowNum, obj) {
 
 /** Xoá các dòng theo số dòng (xoá từ dưới lên, gộp các khối liền nhau). */
 function deleteRows_(sh, rowNums) {
+  requireLicense_();
   var sorted = rowNums.slice().sort(function (a, b) { return b - a; });
   var i = 0;
   while (i < sorted.length) {

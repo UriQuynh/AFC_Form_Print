@@ -10,3 +10,7 @@ video/node_modules/
 # khoá API (không commit)
 .env
 video/.env
+
+# khoá riêng cấp mã bản quyền (tools/license-key.mjs) — KHÔNG BAO GIỜ commit
+*.pem
+.license/
