@@ -64,6 +64,18 @@
       "hash": "a48258cbf0b5"
     }
   ],
+  "print-small": [
+    {
+      "file": "audio-short/print-small-0.mp3",
+      "seconds": 4.8,
+      "hash": "02ad40a75890"
+    },
+    {
+      "file": "audio-short/print-small-1.mp3",
+      "seconds": 2.32,
+      "hash": "36cd5cb7cd20"
+    }
+  ],
   "phieuxuat": [
     {
       "file": "audio-short/phieuxuat-0.mp3",
@@ -83,6 +95,13 @@
       "file": "audio-short/dm-grid-0.mp3",
       "seconds": 2.96,
       "hash": "187cfccafd64"
+    }
+  ],
+  "dm-taixe": [
+    {
+      "file": "audio-short/dm-taixe-0.mp3",
+      "seconds": 4.72,
+      "hash": "1933fc7e8512"
     }
   ],
   "baocao": [
@@ -107,6 +126,20 @@
       "file": "audio-short/web-form-1.mp3",
       "seconds": 2.16,
       "hash": "6fc00eb4fde1"
+    }
+  ],
+  "web-list": [
+    {
+      "file": "audio-short/web-list-0.mp3",
+      "seconds": 4.16,
+      "hash": "c104329cf438"
+    }
+  ],
+  "web-report": [
+    {
+      "file": "audio-short/web-report-0.mp3",
+      "seconds": 3.84,
+      "hash": "d104c5a178db"
     }
   ],
   "phone": [

@@ -62,7 +62,7 @@ function custom(id: string, Comp: React.FC<SceneProps>, o: Opt): Entry {
 }
 
 const FULL: Opt = { manifest: manifestFull as Manifest };
-const SHORT = (keep?: number[]): Opt => ({ manifest: manifestShort as Manifest, keep, scale: 0.35 });
+const SHORT = (keep?: number[]): Opt => ({ manifest: manifestShort as Manifest, keep, scale: 0.5 });
 const shortTexts = (id: string, o: Opt): Opt => ({ ...o, texts: (narrationShort as Record<string, string[]>)[id] });
 const sh = (id: string, keep?: number[]) => shortTexts(id, SHORT(keep));
 
@@ -95,11 +95,15 @@ export const SHORT_ENTRIES: Entry[] = [
   screen(S.tour, sh("tour", [0, 2])),
   screen(S.steps, sh("steps", [0, 1, 2, 3])),
   custom("print-a4", PrintA4, sh("print-a4")),
+  custom("print-small", PrintSmall, sh("print-small")),
   screen(S.phieuxuat, sh("phieuxuat", [0])),
   screen(S.chitiet, sh("chitiet", [0])),
   custom("dm-grid", DmGrid, sh("dm-grid")),
+  screen(S.dmTaiXe, sh("dm-taixe", [1])),
   screen(S.baocao, sh("baocao", [0, 2])),
   screen(S.webForm, sh("web-form", [0, 2])),
+  screen(S.webList, sh("web-list", [1])),
+  screen(S.webReport, sh("web-report", [0])),
   custom("phone", Phone, sh("phone")),
   custom("outro", Outro, sh("outro")),
 ];

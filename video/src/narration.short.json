@@ -20,6 +20,10 @@
     "Phiếu in đúng mẫu A4.",
     "Quét mã QR để mở tem KCS và COA."
   ],
+  "print-small": [
+    "Bấm Tem KCS cộng COA: mỗi cuộn có một tem và một phiếu chất lượng.",
+    "Biên bản giao nhận để tài xế và khách hàng ký."
+  ],
   "phieuxuat": [
     "Sheet PhieuXuat: mỗi dòng là một phiếu, một chuyến xe."
   ],
@@ -29,6 +33,9 @@
   "dm-grid": [
     "Sheet danh mục: gõ vào dòng trống để thêm lựa chọn."
   ],
+  "dm-taixe": [
+    "Sheet danh mục tài xế: điền đơn giá chuyến và đơn giá tấn, lương tự tính."
+  ],
   "baocao": [
     "Sheet BaoCao: chọn ngày, sản lượng tự cập nhật.",
     "Có cả chuyến và lương tài xế."
@@ -36,6 +43,12 @@
   "web-form": [
     "Web app lập phiếu trên điện thoại, cùng một Google Sheet.",
     "Lưu xong in phiếu, tem và biên bản."
+  ],
+  "web-list": [
+    "Tab Danh sách: tìm phiếu, mỗi phiếu có nút Sửa, In và Tem."
+  ],
+  "web-report": [
+    "Tab Báo cáo trên web: chọn ngày, xuất bảng lương gửi kế toán."
   ],
   "phone": [
     "Trên điện thoại: mở link web app, có ba tab và nút lưu ở dưới.",

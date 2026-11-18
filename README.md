@@ -213,7 +213,7 @@ npm run render       # xuất video/out/huong-dan-phieu-xuat-kho-thuyet-minh.mp4
 
 **Giọng đọc thuyết minh**: dùng giọng tiếng Việt **Linh** có sẵn của macOS (chạy cục bộ, không gửi chữ ra ngoài). Lời đọc nằm trong [`video/src/narration.json`](video/src/narration.json), mỗi cảnh một danh sách đoạn, **số đoạn phải bằng số đoạn subtext** của cảnh đó. Viết sẵn dạng đọc được (vd "PXK" → "pê xê ca", "KCS" → "ca xê ét", "web app" → "oép áp"). Sửa lời rồi chạy `npm run narrate`; chỉ đoạn nào đổi chữ mới được đọc lại. Đổi giọng hoặc tốc độ: `VOICE=Linh RATE=190 npm run narrate` (`say -v '?'` liệt kê giọng). Các file `video/public/audio/*.mp3` đã được commit nên máy không có macOS vẫn render được. Độ dài từng cảnh tự giãn theo lời, chú thích và camera dời theo.
 
-**Bản rút gọn (< 2 phút, ~1:20)** dùng giọng ElevenLabs: lời ở [`video/src/narration.short.json`](video/src/narration.short.json) (viết tên riêng nguyên gốc: "Google Sheets", "KCS"…), danh sách cảnh và đoạn giữ lại ở `SHORT_ENTRIES` trong [`video/src/Tutorial.tsx`](video/src/Tutorial.tsx). Đặt khoá API vào `video/.env` (đã `.gitignore`, **không commit**):
+**Bản rút gọn (< 2 phút, ~1:59)** dùng giọng ElevenLabs: lời ở [`video/src/narration.short.json`](video/src/narration.short.json) (viết tên riêng nguyên gốc: "Google Sheets", "KCS"…), danh sách cảnh và đoạn giữ lại ở `SHORT_ENTRIES` trong [`video/src/Tutorial.tsx`](video/src/Tutorial.tsx). Đặt khoá API vào `video/.env` (đã `.gitignore`, **không commit**):
 
 ```
 ELEVENLABS_API_KEY=sk_...
