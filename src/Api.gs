@@ -25,6 +25,7 @@ function listActive_(name) {
 
 /** Toàn bộ dữ liệu cho dropdown + cấu hình. */
 function getMasterData() {
+  requireLicense_();
   var products = listActive_('DM_SanPham').map(function (p) {
     return {
       maSP: str_(p.maSP),
@@ -107,6 +108,7 @@ function rememberWebAppUrl_() {
 
 /** Gợi ý số phiếu kế tiếp: "<stt>/<MM>" — đánh lại từ 1 theo tháng (hoặc năm). */
 function getNextSoPhieu(ngayIso) {
+  requireLicense_();
   var d = ngayIso ? parseDate_(ngayIso) : new Date();
   var cfg = getConfig_();
   var byYear = String(cfg.SO_PHIEU_RESET || '').toUpperCase() === 'NAM';
@@ -163,6 +165,7 @@ function lineOut_(r) {
 
 /** Lấy 1 phiếu kèm chi tiết. */
 function getPhieu(id) {
+  requireLicense_();
   id = str_(id);
   var h = findPhieuRow_(readTable_('PhieuXuat'), id);
   if (!h) return null;
@@ -177,6 +180,7 @@ function getPhieu(id) {
 
 /** Danh sách phiếu (mới nhất trước). filter: {from, to, q, status} */
 function listPhieu(filter) {
+  requireLicense_();
   filter = filter || {};
   var from = filter.from ? parseDate_(filter.from).getTime() : -Infinity;
   var to = filter.to ? parseDate_(filter.to).getTime() : Infinity;
@@ -206,6 +210,7 @@ function listPhieu(filter) {
  *           phuCap, ghiChu, lines:[{maSP, kg, soBanh, ca, may, ngaySX, maCuon, doDay, doAm, ...}]}
  */
 function savePhieu(payload) {
+  requireLicense_();
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -376,6 +381,7 @@ function autoAddMaster_(h) {
 
 /** Huỷ phiếu (giữ lại dữ liệu, không tính vào báo cáo). */
 function cancelPhieu(id, reason) {
+  requireLicense_();
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -404,6 +410,7 @@ function cancelPhieu(id, reason) {
  * (1 phiếu xuất kho = 1 chuyến.)
  */
 function getReport(from, to) {
+  requireLicense_();
   var f = from ? parseDate_(from).getTime() : -Infinity;
   var t = to ? parseDate_(to).getTime() : Infinity;
   var inRange = function (d) { var x = d instanceof Date ? d.getTime() : (safeDate_(d) || new Date(0)).getTime(); return x >= f && x <= t; };
@@ -472,6 +479,7 @@ function getReport(from, to) {
 
 /** Ghi báo cáo lương tài xế ra 1 sheet mới để lưu/gửi kế toán. */
 function exportDriverReport(from, to) {
+  requireLicense_();
   var rep = getReport(from, to);
   var name = 'Luong_' + (from || 'all') + '_' + (to || 'all');
   var ss = ss_();

@@ -219,6 +219,7 @@ function pxkRead_(sh) {
 
 /** Lưu phiếu từ sheet PXK, ghi lại số phiếu / ID / mã cuộn. Trả về phiếu đã lưu. */
 function pxkSave_() {
+  requireLicense_();
   var sh = pxkSheet_();
   var rd = pxkRead_(sh);
   var p = rd.payload;
@@ -323,6 +324,7 @@ function pxkPrint() {
 
 /** Nút + PHIẾU MỚI. */
 function pxkNew() {
+  if (!licenseGuardUi_()) return;
   var ui = SpreadsheetApp.getUi();
   var sh = pxkSheet_();
   var status = str_(sh.getRange(PXK.STATUS).getValue());
@@ -339,6 +341,7 @@ function pxkNew() {
 
 /** Nút MỞ PHIẾU THEO SỐ. */
 function pxkLoad() {
+  if (!licenseGuardUi_()) return;
   var ui = SpreadsheetApp.getUi();
   var res = ui.prompt('Mở phiếu theo số', 'Nhập số phiếu cần mở (vd 230/11):', ui.ButtonSet.OK_CANCEL);
   if (res.getSelectedButton() !== ui.Button.OK) return;
@@ -381,6 +384,9 @@ function onEdit(e) {
     if (!e || !e.range) return;
     var sh = e.range.getSheet();
     if (sh.getName() !== PXK.NAME) return;
+    // Bản sao chưa cấp phép: không tự điền (simple trigger: chỉ dùng PropertiesService, không cần quyền thêm)
+    var lic = licenseStatus_();
+    if (!lic.ok && lic.code !== 'error') return;
     pxkOnEdit_(sh, e.range);
   } catch (err) {
     // không làm phiền người dùng, nhưng ghi log để xem ở Apps Script → Executions

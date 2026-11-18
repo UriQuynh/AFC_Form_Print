@@ -4,6 +4,8 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
+import { generateKeyPair, publicHex, signCode, groupCode, b32encode } from './license-key.mjs';
 
 process.env.TZ = 'Asia/Ho_Chi_Minh';
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -13,12 +15,23 @@ const { createFakeGas } = require(path.join(root, 'dev/fake-gas.js'));
 
 const gas = createFakeGas({ webAppUrl: 'https://script.google.com/macros/s/TEST/exec' });
 gas.install(globalThis);
-const files = ['Config.gs', 'Db.gs', 'Api.gs', 'Setup.gs', 'Code.gs', 'Pxk.gs', 'PxkButtons.gs'];
+const files = ['Config.gs', 'Db.gs', 'Api.gs', 'Setup.gs', 'License.gs', 'Code.gs', 'Pxk.gs', 'PxkButtons.gs'];
 for (const f of files) (0, eval)(fs.readFileSync(path.join(root, 'src', f), 'utf8'));
 
 let passed = 0;
 const t = (name, fn) => {
   try { fn(); passed++; console.log('  ✓', name); } catch (e) { console.error('  ✗', name, '\n   ', e.message); process.exitCode = 1; }
+};
+
+// ---- Khoá bản bản quyền: cặp khoá chỉ dùng trong test (khoá công khai thay vào LICENSE.PUBKEY) ----
+const { privateKey: TEST_PRIV } = generateKeyPair();
+LICENSE.PUBKEY = publicHex(TEST_PRIV);
+const grant = (g) => { const id = g.spreadsheet.getId(); g.props.LICENSE_SSID = id; g.props.LICENSE_CODE = signCode(TEST_PRIV, id); };
+/** Chạy fn với một bảng tính giả lập khác đang là "bảng tính hiện tại" (rồi trả về bảng chính). */
+const withFake = (g, fn) => {
+  const saved = { ...globalThis };
+  g.install(globalThis);
+  try { return fn(); } finally { gas.install(globalThis); Object.keys(g.env).forEach((k) => { globalThis[k] = saved[k]; }); }
 };
 const noDates = (o, where = 'root') => {
   if (o instanceof Date) throw new Error('Date trả về client tại ' + where);
@@ -26,6 +39,83 @@ const noDates = (o, where = 'root') => {
 };
 
 console.log('AFC Form Print — test logic server');
+
+// ===================== Bản quyền =====================
+console.log('— Bản quyền —');
+
+t('Ed25519 (BigInt trong License.gs) khớp Node crypto: chữ ký đúng qua, sai/giả mạo bị loại', () => {
+  const id = 'SHEET_ID_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const code = signCode(TEST_PRIV, id);
+  assert.match(code, /^([A-Z2-7]{4}-){25}[A-Z2-7]{3}$/);
+  assert.equal(licenseVerifyCode_(id, code), true);
+  assert.equal(licenseVerifyCode_(id, code.toLowerCase().replace(/-/g, ' ')), true, 'chấp nhận chữ thường / dấu cách khi gõ tay');
+  assert.equal(licenseVerifyCode_(id + 'x', code), false, 'mã gắn với ID');
+  const sig = Buffer.from(crypto.sign(null, Buffer.from('AFC-LICENSE-V1:' + id), TEST_PRIV));
+  const flip = Buffer.from(sig); flip[5] ^= 1;
+  assert.equal(licenseVerifyCode_(id, groupCode(b32encode(flip))), false, 'đổi 1 bit là hỏng');
+  const other = signCode(generateKeyPair().privateKey, id);
+  assert.equal(licenseVerifyCode_(id, other), false, 'ký bằng khoá khác bị loại');
+  // chữ ký "dẻo": S + L vẫn thoả phương trình nhưng phải bị loại (S >= L)
+  const L = (1n << 252n) + 27742317777372353535851937790883648493n;
+  let S = 0n; for (let i = 63; i >= 32; i--) S = (S << 8n) | BigInt(sig[i]);
+  let S2 = S + L; const mal = Buffer.from(sig);
+  for (let i = 32; i < 64; i++) { mal[i] = Number(S2 & 255n); S2 >>= 8n; }
+  assert.equal(licenseVerifyCode_(id, groupCode(b32encode(mal))), false, 'S >= L bị loại');
+  for (const bad of ['', 'abc', code.slice(0, -5), code + 'AAAA', '!!!!-????', null]) assert.equal(licenseVerifyCode_(id, bad), false, String(bad));
+});
+
+t('chưa kích hoạt (ví dụ bản sao): mọi thao tác ghi/đọc bị chặn bằng thông báo tiếng Việt, không ghi gì', () => {
+  assert.equal(licenseStatus_().code, 'missing');
+  const msg = /chưa được cấp phép[\s\S]*SOLVIQ/;
+  assert.throws(() => setupSheets(), msg);
+  assert.throws(() => seedDemoData(), msg);
+  assert.throws(() => savePhieu({ so: '1/11', ngay: '2026-11-14', khach: 'X', lines: [{ maSP: 'A', kg: 1 }] }), msg);
+  assert.throws(() => cancelPhieu('PX1'), msg);
+  assert.throws(() => exportDriverReport('2026-11-01', '2026-11-30'), msg);
+  assert.throws(() => getMasterData(), msg);
+  assert.throws(() => listPhieu({}), msg);
+  assert.throws(() => getReport('', ''), msg);
+  assert.throws(() => pxkSave_(), msg);
+  assert.equal(gas.spreadsheet.getSheets().length, 0, 'không tạo sheet nào');
+});
+
+t('doGet bản chưa cấp phép trả trang "chưa được cấp phép" (không có dữ liệu / form)', () => {
+  const out = doGet({ parameter: { page: 'print', px: 'PX1' } });
+  const html = out.getContent();
+  assert.match(html, /Bản sao chưa được cấp phép/);
+  assert.match(html, /SOLVIQ/);
+  assert.ok(!/__BOOT__/.test(html));
+});
+
+t('kích hoạt: mã sai / mã của bảng tính khác / mã hỏng bị từ chối, không ghi property', () => {
+  const wrongSheet = signCode(TEST_PRIV, 'MOT_BANG_TINH_KHAC_0123456789');
+  for (const c of ['', 'AAAA-BBBB', wrongSheet, signCode(generateKeyPair().privateKey, 'FAKE_SPREADSHEET')]) {
+    const r = licenseActivateWithCode_(c);
+    assert.equal(r.ok, false, c);
+  }
+  assert.deepEqual(Object.keys(gas.props), []);
+  assert.equal(licenseStatus_().ok, false);
+});
+
+t('kích hoạt với mã đúng: ghi LICENSE_*, từ đó ghi dữ liệu được', () => {
+  const r = licenseActivateWithCode_(signCode(TEST_PRIV, 'FAKE_SPREADSHEET'));
+  assert.equal(r.ok, true);
+  assert.equal(gas.props.LICENSE_SSID, 'FAKE_SPREADSHEET');
+  assert.ok(gas.props.LICENSE_CODE && gas.props.LICENSE_AT && gas.props.LICENSE_BY === 'demo@local');
+  assert.equal(licenseStatus_().ok, true);
+  assert.equal(setupSheets(), true);
+});
+
+t('khoá công khai chưa cấu hình (bản chưa chạy "init") -> chặn hết, không kích hoạt được', () => {
+  const keep = LICENSE.PUBKEY;
+  LICENSE.PUBKEY = '';
+  try {
+    assert.equal(licenseStatus_().code, 'no_key');
+    assert.throws(() => savePhieu({}), /chưa được cấp phép/);
+    assert.equal(licenseActivateWithCode_(signCode(TEST_PRIV, 'FAKE_SPREADSHEET')).ok, false);
+  } finally { LICENSE.PUBKEY = keep; }
+});
+
 
 t('setupSheets tạo đủ sheet + danh mục mẫu', () => {
   setupSheets();
@@ -310,7 +400,7 @@ t('PXK: phiếu mới xoá trắng; mở phiếu theo số nạp lại đủ d�
 });
 
 t('PXK: KHÔNG đụng vào sheet "pxk" có sẵn của người dùng (trùng tên không phân biệt hoa/thường)', () => {
-  const g3 = createFakeGas();
+  const g3 = createFakeGas(); grant(g3);
   const saved = { ...globalThis };
   g3.install(globalThis);
   try {
@@ -366,7 +456,7 @@ t('localizeFormula_: đổi dấu ngăn cho bảng tính tiếng Việt, giữ n
 });
 
 t('setup trên bảng tính dùng ";" ghi công thức đúng kiểu', () => {
-  const g2 = createFakeGas({ formulaSep: ';' });
+  const g2 = createFakeGas({ formulaSep: ';' }); grant(g2);
   const saved = { ...globalThis };
   g2.install(globalThis);
   try {
@@ -413,5 +503,134 @@ t('nâng cấp cột cũ "Đang dùng" -> "Ngừng dùng" + xoá tab _conflict t
   assert.equal(sh.getLastRow(), 4);
   assert.equal(gas.spreadsheet.getSheetByName('DM_KhachHang_conflict35786537'), null);
 });
+
+// ===================== Bản quyền: bản sao & clone =====================
+console.log('— Bản quyền: bản sao —');
+
+// Bản sao = cùng dữ liệu + cùng mã nguồn, nhưng ID bảng tính MỚI và Script Properties trống (File > Make a copy)
+const makeCopy = (id) => {
+  const g = createFakeGas({ spreadsheetId: id, ui: true, email: 'khach@copy.vn' });
+  g.load(gas.serialize());
+  g.spreadsheet.id = id;
+  return g;
+};
+const COPY_ID = 'BAN_SAO_0123456789_ABCDEFGHIJKLMNOPQR';
+const copyG = makeCopy(COPY_ID);
+const sheetSnapshot = (g) => JSON.stringify(g.spreadsheet.getSheets().map((s) => s.data));
+const snap0 = sheetSnapshot(copyG);
+
+t('bản sao (ID khác, properties trống): bị chặn ghi, dữ liệu không đổi', () => withFake(copyG, () => {
+  assert.equal(licenseStatus_().code, 'missing');
+  const lines = [{ maSP: 'K76/450', kg: 500, ca: 'C1', may: 'M1' }];
+  assert.throws(() => savePhieu({ so: '999/11', ngay: '2026-11-16', khach: 'LẬU', lines }), /chưa được cấp phép/);
+  assert.throws(() => cancelPhieu(listPhieu0_().id), /chưa được cấp phép/);
+  assert.throws(() => exportDriverReport('2026-11-01', '2026-11-30'), /chưa được cấp phép/);
+  assert.throws(() => pxkSave_(), /chưa được cấp phép/);
+  assert.throws(() => setupSheets(), /chưa được cấp phép/);
+  assert.throws(() => seedDemoData(), /chưa được cấp phép/);
+  assert.throws(() => appendObjects_('DM_KhachHang', [{ ten: 'LẬU' }]), /chưa được cấp phép/);
+  assert.throws(() => getMasterData(), /chưa được cấp phép/);
+  assert.equal(sheetSnapshot(copyG), snap0, 'không có ô nào bị ghi');
+}));
+function listPhieu0_() { return readTable_('PhieuXuat').rows[0]; }
+
+t('bản sao: doGet hiện trang chưa cấp phép, nút trên sheet (pxkNew/pxkLoad) báo và dừng', () => withFake(copyG, () => {
+  const html = doGet({ parameter: {} }).getContent();
+  assert.match(html, /chưa được cấp phép/);
+  const before = copyG.ui.alerts.length;
+  pxkNew(); pxkLoad();
+  assert.equal(copyG.ui.alerts.length - before, 2);
+  assert.match(copyG.ui.alerts[before].message, /chưa được cấp phép/);
+  assert.equal(copyG.ui.prompts.length, 0, 'pxkLoad không hỏi số phiếu');
+}));
+
+t('bản sao: onOpen chỉ còn menu "Bản quyền" + cảnh báo; onEdit không tự điền', () => withFake(copyG, () => {
+  onOpen();
+  const menu = copyG.ui.menus[copyG.ui.menus.length - 1];
+  assert.equal(menu.name, 'AFC Form');
+  assert.deepEqual(menu.items.map((i) => i.label), ['Bản quyền']);
+  assert.deepEqual(menu.items[0].sub.items.map((i) => i.label), ['Kích hoạt bản quyền', 'Kiểm tra bản quyền', 'Gỡ kích hoạt (chủ sở hữu)']);
+  const sh = copyG.spreadsheet.getSheetByName(PXK.NAME);
+  const veh = readTable_('DM_Xe').rows.find((r) => r.soHuu);
+  sh.getRange(PXK.F.soHuuXe).clearContent(); sh.getRange(PXK.F.taiXe).clearContent();
+  sh.getRange(PXK.F.xe).setValue(veh.bienSo);
+  onEdit({ range: sh.getRange(PXK.F.xe) });
+  assert.equal(sh.getRange(PXK.F.soHuuXe).getValue(), '', 'bản chưa cấp phép không tự điền');
+}));
+
+t('clone: properties bị sao chép nguyên (nếu Google có làm vậy) vẫn không dùng được — gắn với ID khác', () => {
+  const g = makeCopy('BAN_CLONE_PROPS_0123456789_ABCDEFGHIJ');
+  Object.assign(g.props, gas.props);
+  withFake(g, () => {
+    assert.equal(licenseStatus_().code, 'mismatch');
+    assert.throws(() => savePhieu({}), /chưa được cấp phép/);
+  });
+});
+
+t('clone: tự đặt LICENSE_SSID bằng tay hoặc dùng lại mã của bảng tính gốc cho ID mới -> bị loại', () => {
+  const g = makeCopy('BAN_CLONE_TU_DAT_0123456789_ABCDEFGHI');
+  const id = g.spreadsheet.getId();
+  withFake(g, () => {
+    g.props.LICENSE_SSID = id; g.props.LICENSE_CODE = 'ABCD-EFGH';
+    assert.equal(licenseStatus_().code, 'bad_code', 'đặt SSID nhưng không có mã hợp lệ');
+    g.props.LICENSE_CODE = gas.props.LICENSE_CODE; // mã hợp lệ của bảng tính gốc
+    assert.equal(licenseStatus_().code, 'bad_code', 'mã của bảng tính khác');
+    assert.throws(() => savePhieu({}), /chưa được cấp phép/);
+  });
+});
+
+t('menu Kích hoạt trên bản sao: mã sai bị từ chối; mã SOLVIQ cấp đúng ID thì chạy và dựng lại menu đầy đủ', () => withFake(copyG, () => {
+  const ui = copyG.ui;
+  ui.promptReplies = ['SAI-SAI-SAI'];
+  licenseMenuActivate_();
+  assert.match(ui.alerts[ui.alerts.length - 1].message, /không đúng/);
+  assert.equal(licenseStatus_().ok, false);
+  ui.promptReplies = [null]; // bấm Huỷ
+  licenseMenuActivate_();
+  assert.equal(licenseStatus_().ok, false);
+  ui.promptReplies = [signCode(TEST_PRIV, COPY_ID)];
+  licenseMenuActivate_();
+  assert.equal(licenseStatus_().ok, true);
+  assert.equal(copyG.props.LICENSE_BY, 'khach@copy.vn');
+  const menu = ui.menus[ui.menus.length - 1];
+  assert.ok(menu.items.length > 5 && menu.items.some((i) => i.label === 'Nhập PXK: In phiếu (lưu + in)'));
+  assert.equal(menu.items[menu.items.length - 1].label, 'Bản quyền');
+  // đã kích hoạt rồi thì không cho kích hoạt lại
+  const n = ui.prompts.length; licenseMenuActivate_();
+  assert.equal(ui.prompts.length, n);
+  // ghi được + onEdit tự điền
+  const saved = savePhieu({ so: '998/11', ngay: '2026-11-16', khach: 'KHÁCH BẢN SAO HỢP LỆ', lines: [{ maSP: 'K76/450', kg: 500, ca: 'C1', may: 'M1' }] });
+  assert.equal(saved.so, '998/11');
+  const sh = copyG.spreadsheet.getSheetByName(PXK.NAME);
+  const veh = readTable_('DM_Xe').rows.find((r) => r.soHuu);
+  sh.getRange(PXK.F.soHuuXe).clearContent();
+  sh.getRange(PXK.F.xe).setValue(veh.bienSo);
+  onEdit({ range: sh.getRange(PXK.F.xe) });
+  assert.equal(sh.getRange(PXK.F.soHuuXe).getValue(), veh.soHuu, 'đã cấp phép thì onEdit tự điền');
+}));
+
+t('bản gốc (đã kích hoạt) không bị ảnh hưởng bởi bản sao', () => {
+  assert.equal(licenseStatus_().ok, true);
+  assert.equal(getMasterData().products.length, 3);
+});
+
+t('Gỡ kích hoạt: chỉ chủ sở hữu; xong thì bị chặn lại, kích hoạt lại được', () => withFake(copyG, () => {
+  const ui = copyG.ui;
+  copyG.spreadsheet.owner = 'chu@solviq.vn';
+  licenseMenuDeactivate_();
+  assert.match(ui.alerts[ui.alerts.length - 1].message, /Chỉ chủ sở hữu/);
+  assert.equal(licenseStatus_().ok, true, 'người không phải chủ không gỡ được');
+  copyG.spreadsheet.owner = 'khach@copy.vn';
+  licenseMenuDeactivate_();
+  assert.equal(licenseStatus_().ok, false);
+  assert.deepEqual(Object.keys(copyG.props).filter((k) => k.startsWith('LICENSE_')), []);
+  assert.throws(() => savePhieu({}), /chưa được cấp phép/);
+  assert.equal(licenseActivateWithCode_(signCode(TEST_PRIV, COPY_ID)).ok, true);
+}));
+
+t('Kiểm tra bản quyền hiện trạng thái', () => withFake(copyG, () => {
+  licenseMenuCheck_();
+  assert.match(copyG.ui.alerts[copyG.ui.alerts.length - 1].message, /Đã được cấp phép[\s\S]*khach@copy\.vn/);
+}));
 
 console.log(`\n${passed} test đạt${process.exitCode ? ' — CÓ LỖI' : ''}`);

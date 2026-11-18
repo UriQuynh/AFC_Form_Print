@@ -122,8 +122,9 @@
   });
 
   class Spreadsheet {
-    constructor(formulaSep) { this.sheets = []; this.nextId = 1; this.active = null; this.formulaSep = formulaSep || ','; }
-    getId() { return 'FAKE_SPREADSHEET'; }
+    constructor(formulaSep, id) { this.sheets = []; this.nextId = 1; this.active = null; this.formulaSep = formulaSep || ','; this.id = id || 'FAKE_SPREADSHEET'; }
+    getId() { return this.id; }
+    getOwner() { return this.owner ? { getEmail: () => this.owner } : null; }
     getUrl() { return 'https://docs.google.com/spreadsheets/d/FAKE/edit'; }
     getSheetByName(n) { return this.sheets.find((s) => s.name === n) || null; }
     getSheets() { return this.sheets.slice(); }
@@ -172,33 +173,92 @@
     return ss;
   }
 
+  // Giao diện giả lập (menu / alert / prompt) để test onOpen và các lệnh menu. Bật bằng opts.ui = true.
+  function createFakeUi() {
+    const ui = { menus: [], alerts: [], toasts: [], prompts: [], promptReplies: [], confirmReplies: [] };
+    const Button = { OK: 'OK', YES: 'YES', NO: 'NO', CANCEL: 'CANCEL' };
+    function makeMenu(name) {
+      const m = { name, items: [] };
+      m.addItem = (label, fn) => { m.items.push({ label, fn }); return m; };
+      m.addSeparator = () => m;
+      m.addSubMenu = (sub) => { m.items.push({ label: sub.name, sub }); return m; };
+      m.addToUi = () => { ui.menus.push(m); return m; };
+      return m;
+    }
+    ui.createMenu = makeMenu;
+    ui.ButtonSet = { OK: 'OK', OK_CANCEL: 'OK_CANCEL', YES_NO: 'YES_NO' };
+    ui.Button = Button;
+    // alert(title?, message?, buttons?) -> nút trả lời (YES_NO lấy từ confirmReplies, mặc định YES)
+    ui.alert = (a, b, c) => {
+      const buttons = c || (typeof b === 'string' ? undefined : b);
+      ui.alerts.push({ title: b !== undefined && typeof b === 'string' ? a : '', message: b !== undefined && typeof b === 'string' ? b : a, buttons });
+      return buttons === 'YES_NO' ? (ui.confirmReplies.length ? ui.confirmReplies.shift() : 'YES') : 'OK';
+    };
+    ui.prompt = (title, msg) => {
+      ui.prompts.push({ title, message: msg });
+      const text = ui.promptReplies.length ? ui.promptReplies.shift() : null;
+      return { getSelectedButton: () => (text === null ? 'CANCEL' : 'OK'), getResponseText: () => text || '' };
+    };
+    ui.showModalDialog = () => {};
+    return ui;
+  }
+
+  // SHA-512/256 thật chỉ có khi chạy trong Node (test). Như Apps Script: trả mảng byte CÓ DẤU (-128..127).
+  function computeDigest(alg, value) {
+    if (typeof require === 'undefined') throw new Error('computeDigest chỉ có trong Node');
+    const bytes = typeof value === 'string' ? Buffer.from(value, 'utf8') : Buffer.from(value.map((v) => {
+      if (!Number.isInteger(v) || v < -128 || v > 127) throw new Error('computeDigest: byte ngoài -128..127: ' + v);
+      return v & 255;
+    }));
+    const name = { SHA_256: 'sha256', SHA_512: 'sha512', MD5: 'md5', SHA_1: 'sha1' }[alg];
+    if (!name) throw new Error('Thuật toán không hỗ trợ: ' + alg);
+    return Array.from(require('crypto').createHash(name).update(bytes).digest()).map((v) => (v > 127 ? v - 256 : v));
+  }
+
   function createFakeGas(opts) {
     opts = opts || {};
-    let ss = opts.spreadsheet || new Spreadsheet(opts.formulaSep);
+    let ss = opts.spreadsheet || new Spreadsheet(opts.formulaSep, opts.spreadsheetId);
     const props = {};
+    const ui = opts.ui ? createFakeUi() : null;
+    // HtmlService: createHtmlOutput giữ lại nội dung để test đọc; phần còn lại là no-op chain.
+    const htmlChain = chain('HtmlService');
+    const htmlService = new Proxy({}, {
+      get(_t, k) {
+        if (k !== 'createHtmlOutput') return htmlChain[k];
+        return (html) => {
+          const out = { html: String(html), title: '' };
+          ['setWidth', 'setHeight', 'addMetaTag', 'setXFrameOptionsMode'].forEach((m) => { out[m] = () => out; });
+          out.setTitle = (t) => { out.title = t; return out; };
+          out.getContent = () => out.html;
+          return out;
+        };
+      },
+    });
     const env = {
       SpreadsheetApp: {
         getActiveSpreadsheet: () => ss,
         getActive: () => ss,
         openById: () => ss,
         getActiveSheet: () => ss.getActiveSheet(),
-        getUi: () => { throw new Error('No UI in fake'); },
+        getUi: () => { if (!ui) throw new Error('No UI in fake'); return ui; },
         flush: () => {},
         newDataValidation: () => chain('DataValidation'),
       },
-      Utilities: { formatDate, getUuid: uuid, base64Decode: (s) => s, newBlob: (b) => ({ bytes: b }) },
+      Utilities: { formatDate, getUuid: uuid, base64Decode: (s) => s, newBlob: (b) => ({ bytes: b }), computeDigest, DigestAlgorithm: { SHA_256: 'SHA_256', SHA_512: 'SHA_512', MD5: 'MD5', SHA_1: 'SHA_1' } },
       Session: {
         getScriptTimeZone: () => 'Asia/Ho_Chi_Minh',
         getActiveUser: () => ({ getEmail: () => opts.email || 'demo@local' }),
       },
       LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {}, tryLock: () => true }) },
-      PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => props[k] || null, setProperty: (k, v) => { props[k] = v; } }) },
+      PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (k in props ? props[k] : null), setProperty: (k, v) => { props[k] = String(v); }, deleteProperty: (k) => { delete props[k]; }, getProperties: () => Object.assign({}, props) }) },
       ScriptApp: { getService: () => ({ getUrl: () => opts.webAppUrl || '' }) },
-      HtmlService: chain('HtmlService'),
+      HtmlService: htmlService,
     };
     return {
       env,
       get spreadsheet() { return ss; },
+      props,
+      ui,
       set spreadsheet(v) { ss = v; },
       serialize: () => serialize(ss),
       load: (json) => { ss = deserialize(json); },
