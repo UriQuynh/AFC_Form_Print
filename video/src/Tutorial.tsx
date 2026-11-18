@@ -100,6 +100,7 @@ export const SHORT_ENTRIES: Entry[] = [
   custom("dm-grid", DmGrid, sh("dm-grid")),
   screen(S.baocao, sh("baocao", [0, 2])),
   screen(S.webForm, sh("web-form", [0, 2])),
+  custom("phone", Phone, sh("phone")),
   custom("outro", Outro, sh("outro")),
 ];
 

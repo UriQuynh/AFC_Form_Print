@@ -1,5 +1,7 @@
 {
-  "intro": ["Hướng dẫn lập phiếu xuất kho Giấy AFC."],
+  "intro": [
+    "Hướng dẫn lập phiếu xuất kho Giấy AFC."
+  ],
   "overview": [
     "Google Sheets có ba nhóm tab: nhập liệu, dữ liệu, danh mục.",
     "Nhân viên chỉ dùng nhóm nhập liệu."
@@ -18,9 +20,15 @@
     "Phiếu in đúng mẫu A4.",
     "Quét mã QR để mở tem KCS và COA."
   ],
-  "phieuxuat": ["Sheet PhieuXuat: mỗi dòng là một phiếu, một chuyến xe."],
-  "chitiet": ["Sheet ChiTiet: mỗi dòng là một cuộn, dữ liệu cho báo cáo."],
-  "dm-grid": ["Sheet danh mục: gõ vào dòng trống để thêm lựa chọn."],
+  "phieuxuat": [
+    "Sheet PhieuXuat: mỗi dòng là một phiếu, một chuyến xe."
+  ],
+  "chitiet": [
+    "Sheet ChiTiet: mỗi dòng là một cuộn, dữ liệu cho báo cáo."
+  ],
+  "dm-grid": [
+    "Sheet danh mục: gõ vào dòng trống để thêm lựa chọn."
+  ],
   "baocao": [
     "Sheet BaoCao: chọn ngày, sản lượng tự cập nhật.",
     "Có cả chuyến và lương tài xế."
@@ -29,5 +37,11 @@
     "Web app lập phiếu trên điện thoại, cùng một Google Sheet.",
     "Lưu xong in phiếu, tem và biên bản."
   ],
-  "outro": ["Lập phiếu, chọn danh mục, báo cáo tự tính. Cảm ơn quý vị."]
+  "phone": [
+    "Trên điện thoại: mở link web app, có ba tab và nút lưu ở dưới.",
+    "Nút trên Google Sheets chỉ chạy trên máy tính, điện thoại dùng web app."
+  ],
+  "outro": [
+    "Lập phiếu, chọn danh mục, báo cáo tự tính. Cảm ơn quý vị."
+  ]
 }

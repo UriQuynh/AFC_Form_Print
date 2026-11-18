@@ -109,6 +109,18 @@
       "hash": "6fc00eb4fde1"
     }
   ],
+  "phone": [
+    {
+      "file": "audio-short/phone-0.mp3",
+      "seconds": 4.48,
+      "hash": "6d78fbff40ba"
+    },
+    {
+      "file": "audio-short/phone-1.mp3",
+      "seconds": 3.92,
+      "hash": "f1fd0351390b"
+    }
+  ],
   "outro": [
     {
       "file": "audio-short/outro-0.mp3",
