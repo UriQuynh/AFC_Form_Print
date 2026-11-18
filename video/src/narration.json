@@ -1,0 +1,79 @@
+{
+  "intro": [
+    "Xin chào. Đây là video hướng dẫn thao tác phiếu xuất kho của Giấy A ép xê, trên Gu-gồ Sít và oép áp. Nhập một lần, in đúng mẫu, và có sẵn dữ liệu để làm báo cáo."
+  ],
+  "overview": [
+    "Gu-gồ Sít có nhiều tab, mỗi tab là một cửa sổ. Hãy nhớ ba nhóm. Một, nhập liệu: nơi lập phiếu. Hai, dữ liệu: hệ thống tự ghi, không cần gõ tay. Ba, danh mục: gõ trực tiếp để thành danh sách chọn.",
+    "Nhân viên chỉ làm việc ở nhóm một. Nhóm ba do quản lý cập nhật khi có khách, xe hoặc sản phẩm mới. Sheet pê xê ca viết thường là mẫu gốc, hệ thống không ghi vào đó."
+  ],
+  "tour": [
+    "Sheet Nhập pê xê ca là nơi lập phiếu xuất kho. Nhân viên chỉ cần làm việc ở cửa sổ này.",
+    "Hàng trên cùng có ba nút. In phiếu: lưu phiếu rồi mở trang in. Phiếu mới: xoá trắng để lập phiếu khác. Và mở phiếu theo số: mở lại phiếu cũ để sửa.",
+    "Các ô nền vàng là ô để nhập, và đều có danh sách chọn. Các ô màu tím bên phải tự cộng số cuộn, tổng ki-lô-gam, trừ bì và thực xuất.",
+    "Bảng hàng bên dưới: mỗi dòng là một cuộn hoặc một pa-lét. Cột mã cuộn cứ để trống, hệ thống sẽ tự cấp khi lưu."
+  ],
+  "steps": [
+    "Bước một. Bấm phiếu mới. Số phiếu, ngày xuất, kho và người lập sẽ được điền sẵn.",
+    "Bước hai. Chọn khách hàng và biển số xe. Loại xe và tài xế tự điền theo xe. Gõ tên mới cũng được, hệ thống tự thêm vào danh mục.",
+    "Bước ba. Ở dòng đầu, chọn mã sản phẩm và ca. Các dòng sau chỉ cần gõ số ki-lô-gam, mã sản phẩm, ca và máy sẽ lấy theo dòng trên. Cũng có thể dán cả cột số từ Éc-xeo.",
+    "Bước bốn. Bấm in phiếu. Phiếu được lưu vào hai sheet phiếu xuất và chi tiết, rồi mở trang in khổ a bốn.",
+    "Sau khi lưu, trạng thái báo đã lưu, và mã cuộn hoặc pa-lét được cấp tự động. Muốn sửa phiếu, bấm mở phiếu theo số, sửa xong bấm in phiếu lại."
+  ],
+  "print-a4": [
+    "Bấm in phiếu là trình duyệt mở ngay trang in, đúng mẫu bê em không bốn của A ép xê. Phiếu cuộn ghi mã từng cuộn. Phiếu pa-lét có số bánh, trừ bì mười hai ki-lô-gam mỗi pa-lét, và thực xuất.",
+    "Mã kiu a ở góc phải: quét bằng điện thoại để mở tem ca xê ét và xê ô a của các cuộn trong phiếu. Khi in, chọn khổ a bốn, lề không có, tắt đầu trang và chân trang."
+  ],
+  "print-small": [
+    "Từ phiếu, bấm tem ca xê ét cộng xê ô a, hoặc quét mã kiu a. Mỗi cuộn có một tem ca xê ét dán lên cuộn, và một phiếu xê ô a chất lượng. Biên bản giao nhận để tài xế và khách hàng ký nhận.",
+    "Khi in tem, chọn khổ a năm, lề không có. Chọn được tất cả các cuộn, hoặc từng cuộn một."
+  ],
+  "phieuxuat": [
+    "Sheet phiếu xuất: mỗi dòng là một phiếu xuất kho, cũng là một chuyến xe. Hệ thống tự ghi, không cần gõ tay.",
+    "Biển số xe và tài xế dùng để tính số chuyến và tiền lương. Kéo sang phải sẽ thấy cột trạng thái: đã xuất, hoặc đã huỷ."
+  ],
+  "chitiet": [
+    "Sheet chi tiết: mỗi dòng là một cuộn hoặc một pa-lét, gắn với số phiếu ở cột đầu. Đây là dữ liệu gốc để làm báo cáo sản lượng.",
+    "Mã cuộn gồm máy, ngày sản xuất, ca và số thứ tự. Kéo sang phải là các chỉ tiêu ca xê ét dùng để in tem."
+  ],
+  "dm-grid": [
+    "Đây là bảy sheet danh mục và sheet cấu hình. Gõ vào các dòng trống, lần sau sẽ thấy ngay trong danh sách chọn. Cột ngừng dùng: đánh dấu để ẩn một mục mà vẫn giữ lịch sử."
+  ],
+  "dm-sanpham": [
+    "Sheet danh mục sản phẩm: gõ thêm sản phẩm ở dòng trống. Form và sheet Nhập pê xê ca tự cập nhật danh sách chọn.",
+    "Đơn vị là cuộn hay pa-lét quyết định cách in phiếu. Pa-lét được trừ bì theo cột trừ bì khi tính thực xuất.",
+    "Không dùng nữa thì đánh dấu ngừng dùng: mục đó biến khỏi danh sách chọn, nhưng lịch sử vẫn còn."
+  ],
+  "dm-taixe": [
+    "Sheet danh mục tài xế: danh sách tài xế và xe mặc định. Chọn xe trên phiếu thì tài xế tự điền.",
+    "Điền đơn giá theo chuyến và đơn giá theo tấn. Lương bằng số chuyến nhân đơn giá chuyến, cộng số tấn nhân đơn giá tấn, cộng phụ cấp."
+  ],
+  "baocao": [
+    "Sheet báo cáo: nhập từ ngày, đến ngày ở hai ô vàng, các bảng bên dưới tự cập nhật.",
+    "Đây là bảng sản lượng theo ngày và theo sản phẩm. Phiếu đã huỷ không được tính.",
+    "Tiếp theo là bảng theo khách hàng, và bảng tài xế với số chuyến và lương, tính từ đơn giá ở danh mục tài xế."
+  ],
+  "cauhinh": [
+    "Sheet cấu hình chứa tên công ty, mã biểu mẫu, dòng nguồn cuối phiếu. Sửa ở đây thì phiếu in ra đổi theo.",
+    "Ngoài ra còn số dòng tối thiểu của phiếu, cách đánh số phiếu theo tháng hay theo năm, và link oép áp."
+  ],
+  "web-form": [
+    "Oép áp là cách thứ hai để lập phiếu, mở bằng link trên điện thoại hoặc máy tính. Dữ liệu vẫn ghi vào cùng một Gu-gồ Sít.",
+    "Các ô và quy tắc tự điền giống sheet Nhập pê xê ca: dán nhanh số ki-lô-gam, mã cuộn tự sinh, và nhập chỉ tiêu ca xê ét cho từng cuộn.",
+    "Lưu xong sẽ hiện thanh xanh với ba nút: in phiếu xuất kho a bốn, tem ca xê ét cộng xê ô a khổ a năm, và biên bản giao nhận."
+  ],
+  "web-list": [
+    "Tab danh sách: tìm phiếu theo ngày, số phiếu, khách hàng, xe hoặc tài xế.",
+    "Mỗi phiếu có ba nút: sửa, in, và tem. Phiếu đã huỷ vẫn nằm trong danh sách nhưng bị gạch ngang."
+  ],
+  "web-report": [
+    "Tab báo cáo: chọn khoảng ngày rồi bấm xem báo cáo. Nút xuất bảng lương sẽ ghi một sheet riêng để gửi kế toán.",
+    "Phía dưới là sản lượng theo ngày, theo sản phẩm, theo khách hàng, và bảng chuyến của từng tài xế."
+  ],
+  "phone": [
+    "Trên điện thoại, mở link oép áp rồi chọn thêm vào màn hình chính để mở nhanh như một ứng dụng. Có ba tab: lập phiếu, danh sách, báo cáo, và thanh dưới luôn hiện tổng ki-lô-gam cùng nút lưu. Dán cả dãy số để thêm nhiều cuộn.",
+    "Lưu ý: các nút bấm trên Gu-gồ Sít chỉ chạy trên máy tính. Trên điện thoại, hãy dùng oép áp."
+  ],
+  "outro": [
+    "Tóm lại, nhớ ba điều. Một, lập phiếu ở Nhập pê xê ca và bấm in phiếu. Hai, danh mục gõ trực tiếp, thành danh sách chọn. Ba, báo cáo tự tính ở sheet báo cáo. Cần hỗ trợ xin liên hệ Sol-vích. Cảm ơn quý vị đã xem."
+  ]
+}
