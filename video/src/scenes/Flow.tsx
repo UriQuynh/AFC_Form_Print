@@ -434,10 +434,11 @@ export const videoFlow = (o: {
       const vs = Math.round(tb[i] * FPS_V);
       const ve = Math.round(tb[i + 1] * FPS_V);
       const len = sg.end - sg.start;
-      const rate = Math.max(0.6, Math.min(4, (ve - vs) / len));
+      const rate = Math.max(0.35, Math.min(4, (ve - vs) / len));
+      const endFrame = Math.min(Math.floor(o.data.duration * FPS_V) - 1, vs + Math.ceil(len * rate) + 2);
       return (
         <Sequence key={i} from={sg.start} durationInFrames={len} name={`clip:${i}`}>
-          <OffthreadVideo src={staticFile(o.clip)} startFrom={vs} endAt={ve + 20} playbackRate={rate} muted style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <OffthreadVideo src={staticFile(o.clip)} startFrom={vs} endAt={endFrame} playbackRate={rate} muted style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         </Sequence>
       );
     });
