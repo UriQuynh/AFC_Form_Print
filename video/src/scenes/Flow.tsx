@@ -1,8 +1,9 @@
 import React from "react";
-import { Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { Easing, Img, interpolate, OffthreadVideo, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { Backdrop, Caption, Header, SceneFade } from "../components/Chrome";
 import { cue } from "../retime";
 import { C, FONT, MONO, VIEW, shot } from "../theme";
+import { Sequence } from "remotion";
 import { Appear, Bullet, SceneProps } from "./Custom";
 
 // ====================================================== THẺ TIÊU ĐỀ / KẾT (dùng cho các clip theo vai trò)
@@ -195,7 +196,7 @@ export const SheetFlow: React.FC<SceneProps> = ({ duration, captions, segs }) =>
   return (
     <Backdrop>
       <SceneFade duration={duration}>
-        <Header tab="Nhập PXK" title="Nhân viên: nhập phiếu rồi bấm IN" />
+        <Header tab="Cách 1 · Google Sheet" title="Nhập trên sheet Nhập PXK" />
         <div style={{ position: "absolute", right: 260, top: 34, display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ width: 46, height: 46, borderRadius: 23, background: stepColors[step], color: C.ink, fontSize: 28, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{step + 1}</div>
           <div style={{ fontSize: 34, fontWeight: 800 }}>{stepNames[step]}</div>
@@ -401,4 +402,80 @@ export const PrintResult: React.FC<SceneProps> = ({ duration, captions, segs }) 
       </SceneFade>
     </Backdrop>
   );
+};
+
+// ====================================================== THAO TÁC THẬT TRÊN WEB APP (video quay bằng tools/record-web.mjs)
+type FlowData = { duration: number; steps: { name: string; t: number }[] };
+
+/**
+ * Cảnh phát video quay thao tác thật, mỗi bước co giãn vừa đúng lời thuyết minh của bước đó.
+ * Mốc bước lấy từ file .json cùng tên (new, khach, hang, luu, end).
+ */
+export const videoFlow = (o: {
+  clip: string;
+  data: FlowData;
+  kind: "laptop" | "mobile";
+  tab: string;
+  title: string;
+  stepNames: string[];
+  bullets?: string[];
+}): React.FC<SceneProps> => {
+  const FPS_V = 30;
+  const tb = ["new", "khach", "hang", "luu", "end"].map((n) => o.data.steps.find((s) => s.name === n)!.t);
+  const Comp: React.FC<SceneProps> = ({ duration, captions, segs }) => {
+    const f = useCurrentFrame();
+    const t = interpolate(f, [0, 16], [0, 1], { extrapolateRight: "clamp" });
+    let step = 0;
+    segs.forEach((sg, i) => {
+      if (f >= sg.start) step = i;
+    });
+    const colors = [C.green, C.amber, C.pink, "#60a5fa"];
+    const video = segs.map((sg, i) => {
+      const vs = Math.round(tb[i] * FPS_V);
+      const ve = Math.round(tb[i + 1] * FPS_V);
+      const len = sg.end - sg.start;
+      const rate = Math.max(0.6, Math.min(4, (ve - vs) / len));
+      return (
+        <Sequence key={i} from={sg.start} durationInFrames={len} name={`clip:${i}`}>
+          <OffthreadVideo src={staticFile(o.clip)} startFrom={vs} endAt={ve + 20} playbackRate={rate} muted style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        </Sequence>
+      );
+    });
+    const badge = (
+      <div style={{ position: "absolute", right: 260, top: 34, display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 46, height: 46, borderRadius: 23, background: colors[step], color: C.ink, fontSize: 28, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{step + 1}</div>
+        <div style={{ fontSize: 34, fontWeight: 800 }}>{o.stepNames[step]}</div>
+      </div>
+    );
+    return (
+      <Backdrop>
+        <SceneFade duration={duration}>
+          <Header tab={o.tab} title={o.title} kind="web" />
+          {badge}
+          {o.kind === "laptop" ? (
+            <div style={{ position: "absolute", left: VIEW.x, top: VIEW.y, width: VIEW.w, height: VIEW.h, borderRadius: 14, overflow: "hidden", boxShadow: "0 30px 90px rgba(0,0,0,.55)", border: `1px solid ${C.line}`, opacity: t, background: "#fff" }}>
+              {video}
+            </div>
+          ) : (
+            <>
+              <div style={{ position: "absolute", left: 330, top: 108, opacity: t, transform: `translateY(${(1 - t) * 34}px)` }}>
+                <div style={{ width: 400, height: 836, borderRadius: 52, padding: 11, background: "#0a0f1f", border: "3px solid #3a4a78", boxShadow: "0 30px 90px rgba(0,0,0,.6)" }}>
+                  <div style={{ width: "100%", height: "100%", borderRadius: 42, overflow: "hidden", background: "#f3f4f6", position: "relative" }}>{video}</div>
+                </div>
+              </div>
+              <div style={{ position: "absolute", left: 860, top: 230, width: 860, display: "flex", flexDirection: "column", gap: 44 }}>
+                {(o.bullets ?? []).map((b, i) => (
+                  <Bullet key={i} at={segs[i].start + 6} n={i + 1} color={colors[i]}>
+                    {b}
+                  </Bullet>
+                ))}
+              </div>
+            </>
+          )}
+          <Caption duration={duration} captions={captions} />
+        </SceneFade>
+      </Backdrop>
+    );
+  };
+  return Comp;
 };

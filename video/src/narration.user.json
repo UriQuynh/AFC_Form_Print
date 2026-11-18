@@ -1,9 +1,9 @@
 {
   "user-title": [
-    "Hướng dẫn cho nhân viên: nhập phiếu và in."
+    "Hướng dẫn cho nhân viên: nhập phiếu và in, trên Google Sheet, máy tính và điện thoại."
   ],
   "flow": [
-    "Bước một: bấm Phiếu mới. Số phiếu, ngày xuất, kho và người lập được điền sẵn.",
+    "Cách một, trên Google Sheet. Bước một: bấm Phiếu mới. Số phiếu, ngày xuất, kho và người lập được điền sẵn.",
     "Bước hai: chọn khách hàng và biển số xe. Xe và tài xế tự điền.",
     "Bước ba: chọn sản phẩm K76/450, ca, máy, rồi nhập số kg. Các dòng sau chỉ cần gõ kg.",
     "Bước bốn: bấm In phiếu. Hệ thống lưu phiếu, cấp mã cuộn và mở trang in."
@@ -12,6 +12,18 @@
     "Kết quả: phiếu xuất kho A4, đúng khách hàng, số phiếu, biển số xe và tài xế.",
     "Bốn cuộn, mỗi cuộn một mã riêng, tổng hai nghìn một trăm chín mươi ba ki-lô-gam.",
     "Quét mã QR để mở tem KCS và COA. Khi in, chọn khổ A4, lề không có."
+  ],
+  "web-laptop": [
+    "Cách hai: web app trên máy tính. Mở link, bấm Phiếu mới, số phiếu và ngày tự điền.",
+    "Chọn khách hàng, biển số xe và tài xế. Loại xe tự điền.",
+    "Chọn sản phẩm, dán dãy số kg rồi bấm Thêm cuộn. Tổng tự cộng.",
+    "Bấm Lưu và in phiếu. Có sẵn nút in phiếu, tem và biên bản."
+  ],
+  "web-mobile": [
+    "Cách ba: trên điện thoại. Mở link web app, bấm Phiếu mới.",
+    "Chọn khách hàng, biển số xe và tài xế.",
+    "Chọn sản phẩm, dán dãy số kg, bấm Thêm cuộn.",
+    "Bấm Lưu và in phiếu ở thanh phía dưới."
   ],
   "user-end": [
     "Xong. Phiếu đã được lưu sẵn để làm báo cáo."

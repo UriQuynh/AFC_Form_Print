@@ -231,10 +231,10 @@ npm run render:short    # xuất video/out/huong-dan-phieu-xuat-kho-ngan.mp4
 
 | Clip | Dành cho | Nội dung | Lệnh |
 |---|---|---|---|
-| `huong-dan-nhan-vien-nhap-in.mp4` (~1:00) | Nhân viên | Từng thao tác trên sheet Nhập PXK (Phiếu mới → khách, xe → sản phẩm, kg → IN PHIẾU) rồi kết quả trang in A4 | `npm run narrate:user && npm run render:user` |
+| `huong-dan-nhan-vien-nhap-in.mp4` (~1:54) | Nhân viên | Từng thao tác nhập phiếu ở ba nơi: sheet Nhập PXK, web app trên máy tính, web app trên điện thoại (Phiếu mới → khách, xe, tài xế → sản phẩm, kg → Lưu & in), kèm kết quả trang in A4 | `npm run narrate:user && npm run render:user` |
 | `huong-dan-quan-ly-bao-cao.mp4` (~1:13) | Quản lý | Lấy báo cáo, đọc báo cáo, xem dữ liệu PhieuXuat / ChiTiet, đơn giá tài xế | `npm run narrate:manager && npm run render:manager` |
 
-Lời nằm ở `video/src/narration.user.json` và `narration.manager.json`; cảnh dựng ở [`video/src/Roles.tsx`](video/src/Roles.tsx) và [`video/src/scenes/Flow.tsx`](video/src/scenes/Flow.tsx) (sheet giả lập có con trỏ chuột gõ từng ô).
+Hai cảnh web app là video quay thao tác thật trên bản preview bằng `node tools/record-web.mjs` (ra `video/public/clips/web-laptop.mp4`, `web-mobile.mp4` và file `.json` mốc bước; cần Chrome và ffmpeg), nên giao diện luôn khớp bản web hiện tại. Lời nằm ở `video/src/narration.user.json` và `narration.manager.json`; cảnh dựng ở [`video/src/Roles.tsx`](video/src/Roles.tsx) và [`video/src/scenes/Flow.tsx`](video/src/scenes/Flow.tsx) (sheet giả lập có con trỏ chuột gõ từng ô).
 
 - Kịch bản (mốc thời gian, chú thích, subtext) nằm trong [`video/src/data.ts`](video/src/data.ts) và [`video/src/scenes/Custom.tsx`](video/src/scenes/Custom.tsx). Sửa chữ hay thời lượng ở đó rồi render lại.
 - Ảnh nền ở `video/public/shots/`. Ảnh web app và mẫu in chụp lại bằng `node tools/capture-shots.mjs` (từ bản preview, không cần Google). Ảnh các tab Google Sheet là ảnh chụp thật; khi giao diện sheet đổi, chụp lại và thay file `sheet-*.jpg`.

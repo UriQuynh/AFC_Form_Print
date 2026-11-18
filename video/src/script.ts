@@ -59,4 +59,22 @@ export const customScript: Record<string, { duration: number; captions: CaptionK
   "user-end": { duration: 60, captions: [{ at: 0, text: "" }] },
   "mgr-title": { duration: 60, captions: [{ at: 0, text: "" }] },
   "mgr-end": { duration: 60, captions: [{ at: 0, text: "" }] },
+  "web-laptop": {
+    duration: 555,
+    captions: [
+      { at: 0, text: "" },
+      { at: 66, text: "" },
+      { at: 264, text: "" },
+      { at: 454, text: "" },
+    ],
+  },
+  "web-mobile": {
+    duration: 555,
+    captions: [
+      { at: 0, text: "" },
+      { at: 66, text: "" },
+      { at: 264, text: "" },
+      { at: 454, text: "" },
+    ],
+  },
 };
