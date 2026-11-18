@@ -1,0 +1,21 @@
+{
+  "name": "afc-form-print-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Video hướng dẫn thao tác Phiếu xuất kho Giấy A.F.C (Remotion)",
+  "scripts": {
+    "dev": "remotion studio",
+    "typecheck": "tsc --noEmit",
+    "render": "remotion render src/index.ts Tutorial out/huong-dan-phieu-xuat-kho.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.540",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.540"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.7",
+    "typescript": "5.9.3"
+  }
+}

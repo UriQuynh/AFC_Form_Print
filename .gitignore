@@ -4,3 +4,5 @@ preview/
 .claude/
 .DS_Store
 *.log
+video/out/
+video/node_modules/

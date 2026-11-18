@@ -191,6 +191,26 @@ URL trang khi đã deploy:
 | Biên bản giao nhận | `<exec>?page=bienban&px=<ID>` |
 | Tem KCS + COA | `<exec>?page=tem&px=<ID>[&cuon=<mã cuộn>][&loai=kcs\|coa]` |
 
+## 6. Video hướng dẫn thao tác (Remotion)
+
+Thư mục [`video/`](video/) chứa mã nguồn video hướng dẫn các cửa sổ (tab) của Google Sheet và web app, có subtext giải thích từng cửa sổ dùng để làm gì (~3 phút, 1920×1080, 30fps).
+
+```bash
+cd video && npm install
+```
+
+```bash
+npm run dev          # xem / chỉnh trong Remotion Studio
+```
+
+```bash
+npm run render       # xuất video/out/huong-dan-phieu-xuat-kho.mp4
+```
+
+- Kịch bản (mốc thời gian, chú thích, subtext) nằm trong [`video/src/data.ts`](video/src/data.ts) và [`video/src/scenes/Custom.tsx`](video/src/scenes/Custom.tsx). Sửa chữ hay thời lượng ở đó rồi render lại.
+- Ảnh nền ở `video/public/shots/`. Ảnh web app và mẫu in chụp lại bằng `node tools/capture-shots.mjs` (từ bản preview, không cần Google). Ảnh các tab Google Sheet là ảnh chụp thật; khi giao diện sheet đổi, chụp lại và thay file `sheet-*.jpg`.
+- Remotion tải Chrome riêng lần đầu chạy. Nếu máy đã có sẵn `chrome-headless-shell`, thêm `--browser-executable=<đường dẫn>` vào lệnh render.
+
 ---
 
 Thực hiện: SOLVIQ · Dữ liệu thuộc sở hữu Giấy A.F.C, lưu trên tài khoản Google do A.F.C đứng tên.
