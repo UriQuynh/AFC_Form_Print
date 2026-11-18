@@ -9,7 +9,7 @@ import { CaptionKey } from "../types";
 export type SceneProps = { duration: number; captions: CaptionKey[]; segs: Seg[] };
 
 /** Hiện dần tại frame `at` (tính từ đầu cảnh). */
-const Appear: React.FC<{ at: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ at, children, style }) => {
+export const Appear: React.FC<{ at: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ at, children, style }) => {
   const f = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = spring({ frame: f - at, fps, config: { damping: 18, stiffness: 140 }, durationInFrames: 26 });
@@ -197,7 +197,7 @@ const Paper: React.FC<{ src: string; w: number; h: number; style?: React.CSSProp
   </div>
 );
 
-const Bullet: React.FC<{ at: number; n: number; children: React.ReactNode; color?: string }> = ({ at, n, children, color = C.blue }) => (
+export const Bullet: React.FC<{ at: number; n: number; children: React.ReactNode; color?: string }> = ({ at, n, children, color = C.blue }) => (
   <Appear at={at}>
     <div style={{ display: "flex", gap: 22, alignItems: "flex-start" }}>
       <div style={{ flex: "0 0 52px", height: 52, borderRadius: 26, background: color, color: C.ink, fontWeight: 800, fontSize: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>{n}</div>

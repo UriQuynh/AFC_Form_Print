@@ -12,11 +12,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
-// NARRATION=short -> bản rút gọn (< 2 phút): src/narration.short.json -> public/audio-short
-const SHORT = process.env.NARRATION === "short";
-const narration = JSON.parse(fs.readFileSync(path.join(root, SHORT ? "src/narration.short.json" : "src/narration.json"), "utf8"));
-const outDir = path.join(root, SHORT ? "public/audio-short" : "public/audio");
-const tmpDir = path.join(root, SHORT ? "out/tts-short" : "out/tts");
+// NARRATION=<tên> -> src/narration.<tên>.json -> public/audio-<tên> (short = bản rút gọn, user = nhân viên, manager = quản lý)
+const NAME = process.env.NARRATION || "";
+const narration = JSON.parse(fs.readFileSync(path.join(root, NAME ? `src/narration.${NAME}.json` : "src/narration.json"), "utf8"));
+const AUDIO_DIR = NAME ? `audio-${NAME}` : "audio";
+const outDir = path.join(root, "public", AUDIO_DIR);
+const tmpDir = path.join(root, NAME ? `out/tts-${NAME}` : "out/tts");
 fs.mkdirSync(outDir, { recursive: true });
 fs.mkdirSync(tmpDir, { recursive: true });
 
@@ -109,7 +110,7 @@ for (const [id, parts] of Object.entries(narration)) {
       "-ac", "1", "-codec:a", "libmp3lame", "-b:a", "96k", file,
     ]);
     const seconds = Math.round(probe(file) * 1000) / 1000;
-    manifest[id].push({ file: `${SHORT ? "audio-short" : "audio"}/${name}`, seconds, hash: h });
+    manifest[id].push({ file: `${AUDIO_DIR}/${name}`, seconds, hash: h });
     made++;
     console.log(`  ✓ ${name}  ${seconds.toFixed(1)}s`);
   }

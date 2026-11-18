@@ -227,6 +227,15 @@ npm run render:short    # xuất video/out/huong-dan-phieu-xuat-kho-ngan.mp4
 
 Đổi giọng: `EL_VOICE=<voice_id> EL_MODEL=eleven_v3 npm run narrate:short`. Có `ELEVENLABS_API_KEY` thì `npm run narrate` (bản đầy đủ) cũng tự dùng ElevenLabs; muốn dùng giọng macOS thì thêm `PROVIDER=say`. Các file `video/public/audio-short/*.mp3` được commit nên không cần khoá để render lại.
 
+**Hai clip theo vai trò** (cùng giọng ElevenLabs, cần `ELEVENLABS_API_KEY` nếu muốn đổi lời):
+
+| Clip | Dành cho | Nội dung | Lệnh |
+|---|---|---|---|
+| `huong-dan-nhan-vien-nhap-in.mp4` (~1:00) | Nhân viên | Từng thao tác trên sheet Nhập PXK (Phiếu mới → khách, xe → sản phẩm, kg → IN PHIẾU) rồi kết quả trang in A4 | `npm run narrate:user && npm run render:user` |
+| `huong-dan-quan-ly-bao-cao.mp4` (~1:13) | Quản lý | Lấy báo cáo, đọc báo cáo, xem dữ liệu PhieuXuat / ChiTiet, đơn giá tài xế | `npm run narrate:manager && npm run render:manager` |
+
+Lời nằm ở `video/src/narration.user.json` và `narration.manager.json`; cảnh dựng ở [`video/src/Roles.tsx`](video/src/Roles.tsx) và [`video/src/scenes/Flow.tsx`](video/src/scenes/Flow.tsx) (sheet giả lập có con trỏ chuột gõ từng ô).
+
 - Kịch bản (mốc thời gian, chú thích, subtext) nằm trong [`video/src/data.ts`](video/src/data.ts) và [`video/src/scenes/Custom.tsx`](video/src/scenes/Custom.tsx). Sửa chữ hay thời lượng ở đó rồi render lại.
 - Ảnh nền ở `video/public/shots/`. Ảnh web app và mẫu in chụp lại bằng `node tools/capture-shots.mjs` (từ bản preview, không cần Google). Ảnh các tab Google Sheet là ảnh chụp thật; khi giao diện sheet đổi, chụp lại và thay file `sheet-*.jpg`.
 - Remotion tải Chrome riêng lần đầu chạy. Nếu máy đã có sẵn `chrome-headless-shell`, thêm `--browser-executable=<đường dẫn>` vào lệnh render.

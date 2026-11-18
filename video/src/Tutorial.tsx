@@ -10,11 +10,11 @@ import { DmGrid, Intro, Outro, Overview, Phone, PrintA4, PrintSmall, SceneProps 
 import { customScript } from "./script";
 import { ScreenScene } from "./types";
 
-type Entry = { id: string; duration: number; node: React.ReactNode; segs: Seg[] };
-type Manifest = Record<string, Clip[]>;
+export type Entry = { id: string; duration: number; node: React.ReactNode; segs: Seg[] };
+export type Manifest = Record<string, Clip[]>;
 
 /** Tuỳ chọn dựng cảnh: bản đầy đủ dùng mặc định, bản rút gọn chọn bớt đoạn và co nhịp hình. */
-type Opt = {
+export type Opt = {
   manifest: Manifest;
   /** chỉ giữ các đoạn subtext có chỉ số này (đoạn đầu tiên giữ lại luôn bắt đầu ở frame 0) */
   keep?: number[];
@@ -31,7 +31,7 @@ const clipsOf = (o: Opt, id: string) => {
 };
 
 /** Cảnh chụp màn hình: giãn theo lời, dời mọi mốc (camera, chú thích, subtext) theo. */
-function screen(s: ScreenScene, o: Opt): Entry {
+export function screen(s: ScreenScene, o: Opt): Entry {
   const k = o.scale ?? 1;
   const keep = o.keep ?? s.captions.map((_, i) => i);
   const oldAts = keep.map((ci, j) => (j === 0 ? 0 : Math.round(s.captions[ci].at * k)));
@@ -48,7 +48,7 @@ function screen(s: ScreenScene, o: Opt): Entry {
 }
 
 /** Cảnh tự dựng. */
-function custom(id: string, Comp: React.FC<SceneProps>, o: Opt): Entry {
+export function custom(id: string, Comp: React.FC<SceneProps>, o: Opt): Entry {
   const sc = customScript[id];
   const k = o.scale ?? 1;
   const lay = layout(
@@ -111,7 +111,7 @@ export const SHORT_ENTRIES: Entry[] = [
 export const TOTAL_FRAMES = ENTRIES.reduce((a, e) => a + e.duration, 0);
 export const SHORT_TOTAL_FRAMES = SHORT_ENTRIES.reduce((a, e) => a + e.duration, 0);
 
-const make = (entries: Entry[]): React.FC => () => {
+export const make = (entries: Entry[]): React.FC => () => {
   let from = 0;
   return (
     <>

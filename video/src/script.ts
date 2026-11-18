@@ -38,4 +38,25 @@ export const customScript: Record<string, { duration: number; captions: CaptionK
     ],
   },
   outro: { duration: 180, captions: [{ at: 0, text: "" }] },
+  "user-title": { duration: 60, captions: [{ at: 0, text: "" }] },
+  flow: {
+    duration: 500,
+    captions: [
+      { at: 0, text: "" },
+      { at: 125, text: "" },
+      { at: 250, text: "" },
+      { at: 375, text: "" },
+    ],
+  },
+  "flow-result": {
+    duration: 300,
+    captions: [
+      { at: 0, text: "" },
+      { at: 100, text: "" },
+      { at: 200, text: "" },
+    ],
+  },
+  "user-end": { duration: 60, captions: [{ at: 0, text: "" }] },
+  "mgr-title": { duration: 60, captions: [{ at: 0, text: "" }] },
+  "mgr-end": { duration: 60, captions: [{ at: 0, text: "" }] },
 };

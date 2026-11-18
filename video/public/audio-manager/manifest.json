@@ -1,0 +1,76 @@
+{
+  "mgr-title": [
+    {
+      "file": "audio-manager/mgr-title-0.mp3",
+      "seconds": 3.04,
+      "hash": "e228f6c551cc"
+    }
+  ],
+  "baocao": [
+    {
+      "file": "audio-manager/baocao-0.mp3",
+      "seconds": 6.16,
+      "hash": "90305810c51b"
+    },
+    {
+      "file": "audio-manager/baocao-1.mp3",
+      "seconds": 6.4,
+      "hash": "0477c9ac5e18"
+    },
+    {
+      "file": "audio-manager/baocao-2.mp3",
+      "seconds": 4.08,
+      "hash": "b26a650faf16"
+    }
+  ],
+  "web-report": [
+    {
+      "file": "audio-manager/web-report-0.mp3",
+      "seconds": 6.72,
+      "hash": "f43bcd6a59fb"
+    },
+    {
+      "file": "audio-manager/web-report-1.mp3",
+      "seconds": 3.04,
+      "hash": "fab0ee57cd4f"
+    }
+  ],
+  "phieuxuat": [
+    {
+      "file": "audio-manager/phieuxuat-0.mp3",
+      "seconds": 4.56,
+      "hash": "e59c092bb7dd"
+    },
+    {
+      "file": "audio-manager/phieuxuat-1.mp3",
+      "seconds": 5.44,
+      "hash": "854bbacfdfc4"
+    }
+  ],
+  "chitiet": [
+    {
+      "file": "audio-manager/chitiet-0.mp3",
+      "seconds": 4.24,
+      "hash": "534c93c2ee56"
+    },
+    {
+      "file": "audio-manager/chitiet-1.mp3",
+      "seconds": 6.16,
+      "hash": "7c4dc97ef410"
+    }
+  ],
+  "dm-taixe": [
+    {
+      "file": "audio-manager/dm-taixe-0.mp3",
+      "seconds": 4.24,
+      "hash": "2060b48d2c42"
+    }
+  ],
+  "mgr-end": [
+    {
+      "file": "audio-manager/mgr-end-0.mp3",
+      "seconds": 4.16,
+      "hash": "e741ee99edf8"
+    }
+  ]
+}

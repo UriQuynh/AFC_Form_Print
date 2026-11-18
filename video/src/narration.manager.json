@@ -1,0 +1,28 @@
+{
+  "mgr-title": [
+    "Hướng dẫn cho quản lý: lấy báo cáo và xem dữ liệu."
+  ],
+  "baocao": [
+    "Lấy báo cáo: mở sheet BaoCao, chọn từ ngày, đến ngày. Các bảng tự cập nhật.",
+    "Đọc báo cáo: sản lượng theo ngày và theo sản phẩm. Phiếu đã huỷ không được tính.",
+    "Tiếp theo là sản lượng theo khách hàng, số chuyến và lương của từng tài xế."
+  ],
+  "web-report": [
+    "Trên web app: tab Báo cáo, chọn ngày và xem tổng sản lượng, lương. Bấm Xuất bảng lương để gửi kế toán.",
+    "Phía dưới: sản lượng theo sản phẩm và theo khách hàng."
+  ],
+  "phieuxuat": [
+    "Xem dữ liệu gốc: sheet PhieuXuat, mỗi dòng là một phiếu, một chuyến xe.",
+    "Có biển số xe và tài xế để tính chuyến và lương. Cột trạng thái cho biết phiếu đã huỷ."
+  ],
+  "chitiet": [
+    "Sheet ChiTiet: mỗi dòng là một cuộn hoặc pallet, gắn với số phiếu.",
+    "Mã cuộn gồm máy, ngày sản xuất, ca và số thứ tự, để truy xuất."
+  ],
+  "dm-taixe": [
+    "Muốn tính lương: điền đơn giá chuyến và đơn giá tấn ở danh mục tài xế."
+  ],
+  "mgr-end": [
+    "Báo cáo tự cập nhật mỗi khi có phiếu mới. Cảm ơn quý vị."
+  ]
+}

@@ -9,7 +9,11 @@
     "render": "remotion render src/index.ts Tutorial out/huong-dan-phieu-xuat-kho-thuyet-minh.mp4 --audio-codec=aac",
     "narrate": "node scripts/narrate.mjs",
     "narrate:short": "NARRATION=short node scripts/narrate.mjs",
-    "render:short": "remotion render src/index.ts TutorialShort out/huong-dan-phieu-xuat-kho-ngan.mp4 --audio-codec=aac"
+    "render:short": "remotion render src/index.ts TutorialShort out/huong-dan-phieu-xuat-kho-ngan.mp4 --audio-codec=aac",
+    "narrate:user": "NARRATION=user node scripts/narrate.mjs",
+    "narrate:manager": "NARRATION=manager node scripts/narrate.mjs",
+    "render:user": "remotion render src/index.ts TutorialUser out/huong-dan-nhan-vien-nhap-in.mp4 --audio-codec=aac",
+    "render:manager": "remotion render src/index.ts TutorialManager out/huong-dan-quan-ly-bao-cao.mp4 --audio-codec=aac"
   },
   "dependencies": {
     "@remotion/cli": "4.0.540",
